@@ -38,6 +38,7 @@ class Contribution(BaseModel):
     total_ngn: float
     onward_hashes: list[str]  # hashed counterparties for the next bank to probe
     cashout_cluster: str = ""
+    onward_bank: str = ""  # where this hop sent the money — tells the fleet who to ask next
 
 
 def publish_contribution(
@@ -162,6 +163,7 @@ def initiator_contribution(
         accounts=row["accounts"] or 0,
         total_ngn=float(row["total_ngn"] or 0),
         onward_hashes=own_account_hashes,
+        onward_bank=row["dst_bank"] or "",
     )
 
 
@@ -267,6 +269,7 @@ def contribute_hop(
         total_ngn=float(top["total_ngn"]),
         onward_hashes=onward,
         cashout_cluster=top["cashout_cluster"],
+        onward_bank=top["dst_bank"],
     )
 
 

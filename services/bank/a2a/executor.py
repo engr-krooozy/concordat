@@ -19,6 +19,7 @@ from services.bank.a2a.card import IDENTIFIER_SCHEME
 from services.bank.auth import bank_credentials
 from services.bank.config import BankConfig
 from services.bank.policy.engine import counter_terms, evaluate, load_policy
+from services.cleanroom.compiler import contribute_hop, revoke_contribution
 
 log = logging.getLogger("concordat.a2a")
 
@@ -153,6 +154,59 @@ class NegotiationExecutor(AgentExecutor):
                     incoming.parties,
                 )
                 return incoming  # echo = countersignature
+            case protocol.ContributionRequest():
+                # never contribute on terms our own policy would not have accepted
+                as_request = protocol.InvestigationRequest(
+                    bank=self.cfg.bank,
+                    case_ref=incoming.case_ref,
+                    round=0,
+                    rationale="contribution",
+                    computations=[],
+                    boundary_hashes=[],
+                    k_threshold=incoming.k_threshold,
+                    identifier_scheme=incoming.identifier_scheme,
+                    ttl_hours=1,
+                    case_salt="",
+                )
+                violations = evaluate(self.policy, as_request)
+                if violations:
+                    log.warning("refusing contribution: %s", violations)
+                    return protocol.ContributionReceipt(
+                        bank=self.cfg.bank,
+                        case_ref=incoming.case_ref,
+                        accounts=0,
+                        total_ngn=0.0,
+                        refused=violations,
+                    )
+                contribution = contribute_hop(
+                    self.cfg,
+                    incoming.terms_digest,
+                    incoming.k_threshold,
+                    incoming.case_salt,
+                    incoming.window_start,
+                    incoming.window_end,
+                    incoming.room_runner,
+                    list(incoming.probe_hashes),
+                    incoming.room_dataset,
+                )
+                log.info(
+                    "contributed hop for %s: %d accounts", incoming.case_ref, contribution.accounts
+                )
+                return protocol.ContributionReceipt(
+                    bank=self.cfg.bank,
+                    case_ref=incoming.case_ref,
+                    accounts=contribution.accounts,
+                    total_ngn=contribution.total_ngn,
+                    onward_bank=contribution.onward_bank,
+                    cashout_cluster=contribution.cashout_cluster,
+                    onward_hashes=contribution.onward_hashes,
+                    view_id=contribution.view_id,
+                )
+            case protocol.RevokeContribution():
+                revoke_contribution(self.cfg, incoming.terms_digest)
+                return protocol.RoomDissolved(
+                    case_ref=incoming.case_ref, terms_digest=incoming.terms_digest
+                )
             case protocol.RoomDissolved():
                 log.info("room dissolved for case %s", incoming.case_ref)
                 return incoming

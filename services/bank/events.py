@@ -20,6 +20,8 @@ class CaseEvent(BaseModel):
         "case.trace_done",  # investigation finished (dead_end or closed)
         "case.report_done",  # SAR-style report drafted
         "case.negotiated",  # concordat signed (or negotiation rejected) — clean room next
+        "case.analysis_done",  # joint finding assembled; awaiting human approval
+        "case.approved",  # analyst approved enforcement (report field carries approver)
     ]
     bank: str
     case_id: str

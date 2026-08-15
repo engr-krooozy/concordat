@@ -70,6 +70,9 @@ class CaseState(BaseModel):
     case_salt: str = ""  # per-case identifier-hashing salt (set when negotiation opens)
     negotiation_transcript: list[dict] = []  # every sent/received NegotiationMessage
     concordat: dict | None = None  # the signed agreement (ConcordatSigned dump)
+    finding: dict | None = None  # joint ring finding assembled in the clean room
+    contributions: list[dict] = []  # per-bank k-thresholded hop receipts
+    enforcement: list[str] = []  # actions taken inside OUR perimeter only
 
     def log(self, actor: str, action: str, detail: str = "") -> None:
         self.audit.append(

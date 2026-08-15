@@ -96,6 +96,44 @@ class ConcordatSigned(BaseModel):
         return hashlib.sha256(blob.encode()).hexdigest()[:16]
 
 
+class ContributionRequest(BaseModel):
+    """Ask a peer to run its hop of the agreed trace inside its own perimeter."""
+
+    kind: Literal["contribution_request"] = "contribution_request"
+    bank: str  # initiator
+    case_ref: str
+    terms_digest: str
+    k_threshold: int
+    identifier_scheme: str
+    case_salt: str
+    window_start: str
+    window_end: str
+    room_dataset: str
+    room_runner: str
+    probe_hashes: list[str]
+
+
+class ContributionReceipt(BaseModel):
+    """A peer's k-thresholded answer. Carries no rows — only aggregates BigQuery approved."""
+
+    kind: Literal["contribution_receipt"] = "contribution_receipt"
+    bank: str
+    case_ref: str
+    accounts: int
+    total_ngn: float
+    onward_bank: str = ""
+    cashout_cluster: str = ""
+    onward_hashes: list[str] = []
+    view_id: str = ""
+    refused: list[str] = []  # policy violations, if the peer declined
+
+
+class RevokeContribution(BaseModel):
+    kind: Literal["revoke_contribution"] = "revoke_contribution"
+    case_ref: str
+    terms_digest: str
+
+
 class RoomDissolved(BaseModel):
     kind: Literal["room_dissolved"] = "room_dissolved"
     case_ref: str
@@ -109,6 +147,9 @@ NegotiationMessage = Annotated[
     | PolicyVerdict
     | CounterProposal
     | ConcordatSigned
+    | ContributionRequest
+    | ContributionReceipt
+    | RevokeContribution
     | RoomDissolved,
     Field(discriminator="kind"),
 ]

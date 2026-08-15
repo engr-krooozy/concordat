@@ -29,3 +29,10 @@ def _cached(service_account: str, impersonate: bool):
 
 def bank_credentials(cfg: BankConfig):
     return _cached(cfg.service_account, cfg.impersonate_locally)
+
+
+def room_runner_credentials(cfg: BankConfig):
+    """The neutral clean-room identity. Deliberately separate from every bank: it can create
+    and drop rooms but holds no standing access to anyone's dataset.
+    """
+    return _cached(f"sa-cleanroom@{cfg.project}.iam.gserviceaccount.com", True)

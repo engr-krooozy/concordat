@@ -67,3 +67,15 @@ def get_case(case_id: str) -> dict:
         return orch.store.load(case_id).model_dump(mode="json")
     except KeyError:
         raise HTTPException(status_code=404, detail="case not found")
+
+
+@app.post("/cases/{case_id}/approve")
+async def approve_case(case_id: str, approver: str = "analyst") -> dict:
+    """The human gate. Enforcement cannot start without a person calling this."""
+    try:
+        case = await orch.approve(case_id, approver)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="case not found")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc))
+    return {"case_id": case.case_id, "status": case.status, "approved_by": approver}

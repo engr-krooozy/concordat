@@ -9,7 +9,10 @@ import logging
 import os
 
 from services.bank.agents.diplomat import Diplomat
+from services.bank.agents.enforcer import close as close_case
+from services.bank.agents.enforcer import enforce
 from services.bank.agents.fleet import run_investigation
+from services.bank.agents.joint import run_joint_analysis
 from services.bank.agents.negotiation import negotiate
 from services.bank.agents.reporter import draft_report
 from services.bank.case import CaseState, Status
@@ -39,7 +42,9 @@ class Orchestrator:
             case "case.report_done":
                 await self._negotiate(event)
             case "case.negotiated":
-                pass  # Phase 2 day 4: clean-room compilation consumes this
+                await self._joint_analysis(event)
+            case "case.approved":
+                await self._enforce(event)
 
     async def _kickoff(self, event: CaseEvent) -> None:
         case = CaseState(case_id=event.case_id, bank=self.cfg.bank)
@@ -62,6 +67,41 @@ class Orchestrator:
         self.bus.publish(
             CaseEvent(type="case.report_done", bank=self.cfg.bank, case_id=case.case_id)
         )
+
+    async def _joint_analysis(self, event: CaseEvent) -> None:
+        case = self.store.load(event.case_id)
+        if case.status is not Status.AGREED:
+            log.info("case %s is %s — no room to compile", case.case_id, case.status)
+            return
+        try:
+            await run_joint_analysis(self.cfg, case, self.diplomat)
+        finally:
+            self.store.save(case)
+        self.bus.publish(
+            CaseEvent(type="case.analysis_done", bank=self.cfg.bank, case_id=case.case_id)
+        )
+
+    async def approve(self, case_id: str, approver: str) -> CaseState:
+        """Human approval gate. Called by the analyst UI, never by an agent."""
+        case = self.store.load(case_id)
+        if case.status is not Status.AWAITING_APPROVAL:
+            raise ValueError(f"case {case_id} is {case.status}, not awaiting approval")
+        case.transition(Status.ENFORCING, f"{self.cfg.bank}/analyst", f"approved by {approver}")
+        self.store.save(case)
+        self.bus.publish(
+            CaseEvent(type="case.approved", bank=self.cfg.bank, case_id=case_id, report=approver)
+        )
+        return case
+
+    async def _enforce(self, event: CaseEvent) -> None:
+        case = self.store.load(event.case_id)
+        if case.status is not Status.ENFORCING:
+            return
+        enforce(self.cfg, case, approver=event.report or "unknown")
+        case.report = await draft_report(self.cfg, case)
+        close_case(self.cfg, case)
+        self.store.save(case)
+        log.info("case %s closed", case.case_id)
 
     async def _negotiate(self, event: CaseEvent) -> None:
         case = self.store.load(event.case_id)
