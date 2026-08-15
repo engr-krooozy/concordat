@@ -16,6 +16,7 @@ class StubDiplomat:
     def __init__(self, peers: dict[str, NegotiationExecutor]):
         self.peers = peers
         self.rounds_seen: list[int] = []
+        self.last_gate_findings: list[str] = []  # mirrors the real Diplomat's interface
 
     async def discover(self) -> dict[str, str]:
         return {bank: f"stub://{bank}" for bank in self.peers}
