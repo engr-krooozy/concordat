@@ -59,6 +59,18 @@
   button:disabled { background: #2a3145; color: var(--dim); cursor: default; }
   .muted { color: var(--dim); }
   svg text { font-family: ui-sans-serif, sans-serif; }
+  /* the reveal: perimeters resolve one at a time, then the trail draws between them */
+  @keyframes materialise { from { opacity: 0; transform: translateY(10px) scale(.97); }
+                           to   { opacity: 1; transform: none; } }
+  @keyframes drawline    { to { stroke-dashoffset: 0; } }
+  @keyframes pulsering   { 0% { opacity: 0; transform: scale(.6); }
+                           55% { opacity: .9; } 100% { opacity: .45; transform: scale(1); } }
+  .gmaterialise { animation: materialise .55s cubic-bezier(.2,.7,.3,1) both; }
+  .gdraw        { animation: drawline .75s ease-out both; }
+  .gpulse       { animation: pulsering .9s ease-out both; transform-origin: 750px 106px; }
+  .banner { padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px;
+    border: 1px solid var(--line); background: #1b2233; color: var(--dim); }
+  .banner.hot { border-color: #4a4020; background: #241f10; color: var(--gold); }
   .caselist { display: flex; gap: 8px; flex-wrap: wrap; }
   .caselist button { background: #1b2233; color: var(--dim); font-weight: 400;
     border: 1px solid var(--line); font-family: ui-monospace, monospace; font-size: 11px; }
@@ -92,6 +104,7 @@
 
   <section class="card">
     <h3>Money flow across perimeters</h3>
+    <div id="banner" class="banner">select a case</div>
     <svg id="graph" viewBox="0 0 900 220" width="100%" height="220"></svg>
   </section>
 
@@ -103,7 +116,7 @@
 
 <script>
 const BANKS = ["alpha", "meridian", "union"];
-let selected = null, lastStatus = null;
+let selected = null, lastStatus = null, lastGraphSig = null;
 
 const esc = (s) => String(s ?? "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
 const money = (n) => n == null ? "—" : Number(n).toLocaleString("en-NG", { maximumFractionDigits: 0 });
@@ -124,7 +137,7 @@ async function refreshCases() {
        ${esc(c.case_id)} · ${esc(c.status)}</button>`).join("");
 }
 
-function selectCase(id) { selected = id; lastStatus = null; refreshCase(); refreshCases(); }
+function selectCase(id) { selected = id; lastStatus = null; lastGraphSig = null; refreshCase(); refreshCases(); }
 
 function renderBanks(c) {
   const finding = c.finding || {};
@@ -185,33 +198,110 @@ function renderGraph(c) {
   const f = c.finding, signed = !!c.concordat;
   const cols = { alpha: "#6ea8ff", meridian: "#b98bff", union: "#3ecf8e" };
   const hops = Object.fromEntries((f?.hops || []).map(h => [h.bank, h]));
-  const x = { alpha: 130, meridian: 420, union: 710 };
-  let svg = "";
-  // perimeter boxes
-  BANKS.forEach(b => {
+  const x = { alpha: 150, meridian: 450, union: 750 };
+
+  // Re-rendering on every poll would restart the animation forever, so only redraw when the
+  // picture actually changes — and note when the finding arrives, because that is the moment
+  // worth animating: three separate banks becoming one trail.
+  const sig = JSON.stringify({ b: c.bank, e: (c.boundary_edges || []).length,
+                               f: f || null, s: signed, st: c.status });
+  if (sig === lastGraphSig) return;
+  const hadFinding = lastGraphSig ? !!JSON.parse(lastGraphSig).f : false;
+  const reveal = !!f && !hadFinding;
+  lastGraphSig = sig;
+
+  let svg = `<defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#ffd479"/></marker>
+    <filter id="glow"><feGaussianBlur stdDeviation="3.5" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>`;
+
+  BANKS.forEach((b, i) => {
     const known = b === c.bank || hops[b];
-    svg += `<rect x="${x[b] - 105}" y="30" width="210" height="150" rx="10"
-      fill="${known ? "#141926" : "#10141f"}" stroke="${known ? cols[b] : "#232a3d"}"
-      stroke-dasharray="${known ? "0" : "5 4"}" opacity="${known ? 1 : .5}"/>
+    const delay = reveal ? 0.15 + i * 0.35 : 0;
+    const cls = reveal && hops[b] ? "gmaterialise" : "";
+    svg += `<g class="${cls}" style="animation-delay:${delay}s">
+      <rect x="${x[b] - 110}" y="28" width="220" height="156" rx="10"
+        fill="${known ? "#141926" : "#10141f"}" stroke="${known ? cols[b] : "#232a3d"}"
+        stroke-width="${known ? 2 : 1}" stroke-dasharray="${known ? "0" : "5 4"}"
+        opacity="${known ? 1 : .45}" ${known && f ? 'filter="url(#glow)"' : ""}/>
       <text x="${x[b]}" y="52" fill="${cols[b]}" font-size="12" text-anchor="middle">bank ${b}</text>`;
     const n = b === c.bank ? (c.boundary_edges || []).length : hops[b]?.accounts;
-    svg += `<text x="${x[b]}" y="105" fill="#e8ecf5" font-size="26" text-anchor="middle">${n ?? "?"}</text>
-      <text x="${x[b]}" y="126" fill="#8b96ad" font-size="10" text-anchor="middle">mule accounts</text>`;
-    if (hops[b]) svg += `<text x="${x[b]}" y="150" fill="#8b96ad" font-size="10" text-anchor="middle">₦${money(hops[b].total_ngn)}</text>`;
+    svg += `<text id="cnt-${b}" x="${x[b]}" y="108" fill="#e8ecf5" font-size="30"
+        text-anchor="middle" font-weight="600">${n ?? "—"}</text>
+      <text x="${x[b]}" y="129" fill="#8b96ad" font-size="10" text-anchor="middle">mule accounts</text>`;
+    if (hops[b]) svg += `<text x="${x[b]}" y="152" fill="#8b96ad" font-size="10"
+        text-anchor="middle">NGN ${money(hops[b].total_ngn)}</text>`;
+    if (!known) svg += `<text x="${x[b]}" y="152" fill="#5b647a" font-size="10"
+        text-anchor="middle">opaque to us</text>`;
+    svg += `</g>`;
   });
-  // boundary arrows: dashed until the concordat exists, solid once value is known
-  [["alpha", "meridian"], ["meridian", "union"]].forEach(([a, b]) => {
+
+  [["alpha", "meridian"], ["meridian", "union"]].forEach(([a, b], i) => {
     const live = !!hops[b];
-    svg += `<line x1="${x[a] + 105}" y1="105" x2="${x[b] - 105}" y2="105"
-      stroke="${live ? "#ffd479" : "#2b3350"}" stroke-width="${live ? 2.5 : 1.5}"
-      stroke-dasharray="${live ? "0" : "6 5"}" marker-end="url(#ar)"/>
-      <text x="${(x[a] + x[b]) / 2}" y="96" fill="${live ? "#ffd479" : "#8b96ad"}" font-size="10" text-anchor="middle">
-      ${live ? "traced under concordat" : signed ? "agreed, not yet run" : "opaque boundary"}</text>`;
+    const len = (x[b] - 110) - (x[a] + 110);
+    const cls = reveal && live ? "gdraw" : "";
+    const style = reveal && live
+      ? `stroke-dasharray:${len};stroke-dashoffset:${len};animation-delay:${0.35 + i * 0.35}s`
+      : "";
+    svg += `<line class="${cls}" style="${style}" x1="${x[a] + 110}" y1="106" x2="${x[b] - 110}" y2="106"
+      stroke="${live ? "#ffd479" : "#2b3350"}" stroke-width="${live ? 3 : 1.5}"
+      ${live ? "" : 'stroke-dasharray="6 5"'} marker-end="url(#ar)"/>
+      <text x="${(x[a] + x[b]) / 2}" y="96" fill="${live ? "#ffd479" : "#8b96ad"}"
+        font-size="10" text-anchor="middle">${
+      live ? "traced under concordat" : signed ? "agreed, not yet run" : "opaque boundary"}</text>`;
   });
-  if (f?.cashout_cluster) svg += `<text x="710" y="200" fill="#ffd479" font-size="11" text-anchor="middle">cash-out cluster ${esc(f.cashout_cluster)}</text>`;
-  document.getElementById("graph").innerHTML =
-    `<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M0,0 L10,5 L0,10 z" fill="#ffd479"/></marker></defs>` + svg;
+
+  if (f?.cashout_cluster) {
+    svg += `<g class="${reveal ? "gpulse" : ""}" style="animation-delay:1.25s">
+      <circle cx="${x.union}" cy="106" r="86" fill="none" stroke="#ffd479" stroke-width="1.5" opacity=".55"/>
+      <text x="${x.union}" y="206" fill="#ffd479" font-size="12" text-anchor="middle"
+        font-weight="600">cash-out cluster ${esc(f.cashout_cluster)}</text></g>`;
+  }
+  document.getElementById("graph").innerHTML = svg;
+
+  if (reveal) {
+    BANKS.forEach((b, i) => {
+      const target = b === c.bank ? (c.boundary_edges || []).length : hops[b]?.accounts;
+      if (target) countUp(document.getElementById(`cnt-${b}`), target, 700, 150 + i * 350);
+    });
+  }
+}
+
+function countUp(el, target, ms, delayMs) {
+  if (!el) return;
+  el.textContent = "0";
+  setTimeout(() => {
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / ms);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - k, 3)));
+      if (k < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }, delayMs);
+}
+
+const NARRATION = {
+  detected: "a fraud report has just been filed",
+  tracing: "Alpha is following the money through its own ledger",
+  dead_end: "the trail leaves Alpha's perimeter — alone, this is where it ends",
+  discovering: "Alpha is looking for counterpart fleets to ask",
+  negotiating: "the banks are bargaining over what may be computed",
+  rejected: "no agreement was reached — nothing was shared",
+  agreed: "terms signed by all parties",
+  room_active: "an ephemeral clean room has been compiled from the agreement",
+  joint_analysis: "each bank is contributing a k-thresholded answer, never rows",
+  awaiting_approval: "the fleets are done — a human must decide before anything happens",
+  enforcing: "Alpha is acting, inside its own perimeter only",
+  closed: "case closed",
+};
+
+function renderBanner(c) {
+  const el = document.getElementById("banner");
+  el.textContent = NARRATION[c.status] || c.status;
+  el.className = "banner" + (["dead_end", "awaiting_approval", "closed"].includes(c.status) ? " hot" : "");
 }
 
 function renderAudit(c) {
@@ -228,6 +318,7 @@ async function refreshCase() {
   if (!r.ok) return;
   const c = await r.json();
   renderBanks(c); renderTranscript(c); renderFinding(c); renderGraph(c); renderAudit(c);
+  renderBanner(c);
   lastStatus = c.status;
 }
 
