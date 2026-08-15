@@ -34,7 +34,16 @@ class BankPolicy(BaseModel):
 
 def load_policy(cfg: BankConfig) -> BankPolicy:
     raw = yaml.safe_load((_POLICY_DIR / f"{cfg.bank}.yaml").read_text())
-    return BankPolicy.model_validate(raw)
+    policy = BankPolicy.model_validate(raw)
+    # A probe cap below our own k floor is unsatisfiable: we would demand aggregates over at
+    # least k accounts while forbidding anyone to ask about that many. Catch it at load time
+    # rather than letting negotiations loop forever against an impossible rule.
+    if policy.rules.max_boundary_hashes < policy.rules.min_k_threshold:
+        raise ValueError(
+            f"{policy.version}: max_boundary_hashes ({policy.rules.max_boundary_hashes}) "
+            f"< min_k_threshold ({policy.rules.min_k_threshold}) — no proposal could satisfy it"
+        )
+    return policy
 
 
 def evaluate(policy: BankPolicy, req: InvestigationRequest) -> list[str]:
@@ -64,7 +73,9 @@ def counter_terms(policy: BankPolicy, req: InvestigationRequest) -> CounterPropo
     violations = evaluate(policy, req)
     if not violations:
         return None  # nothing to counter — it's acceptable as-is
-    negotiable = ("k_threshold_below_minimum", "ttl_exceeds_maximum", "too_many_boundary_hashes")
+    # A probe that is too wide cannot be fixed by adjusting k or ttl — the initiator would
+    # have to drop evidence — so it is an outright refusal, not a counter-offer.
+    negotiable = ("k_threshold_below_minimum", "ttl_exceeds_maximum")
     if any(not v.startswith(negotiable) for v in violations):
         return None
     r = policy.rules

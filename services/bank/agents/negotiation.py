@@ -131,8 +131,19 @@ async def negotiate(
         if accepts == set(peers):
             break
         # converge: strictest demands win, next round
+        previous = (proposal.k_threshold, proposal.ttl_hours)
         proposal.k_threshold = max(demanded_k)
         proposal.ttl_hours = min(demanded_ttl)
+        if (proposal.k_threshold, proposal.ttl_hours) == previous:
+            # a peer keeps countering on terms we already meet: its objection is to something
+            # we cannot concede by moving k or ttl. Stop rather than loop.
+            case.transition(
+                Status.REJECTED,
+                f"{cfg.bank}/diplomat",
+                f"deadlock at k={proposal.k_threshold} ttl={proposal.ttl_hours}: "
+                "counterpart objection is not resolvable by these terms",
+            )
+            return None
         case.log(
             f"{cfg.bank}/diplomat",
             "negotiation:converge",

@@ -85,8 +85,12 @@ def build_tools(ctx: FleetContext):
             # keep the frontier so the agent can retry with a lower threshold: mule networks
             # fan out into many small transfers, which a high min_amount hides
             ctx.case.log(f"{ctx.cfg.bank}/tracer", "hop_empty", f"min_amount={min_amount}")
-            return {"hops": [], "frontier": ctx.frontier, "boundary_edges": [],
-                    "note": "no hops at this min_amount; retry lower before concluding"}
+            return {
+                "hops": [],
+                "frontier": ctx.frontier,
+                "boundary_edges": [],
+                "note": "no hops at this min_amount; retry lower before concluding",
+            }
         new_frontier: list[str] = []
         boundaries = []
         for h in hops:

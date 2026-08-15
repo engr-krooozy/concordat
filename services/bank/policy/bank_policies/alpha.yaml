@@ -6,5 +6,5 @@ rules:
   max_ttl_hours: 72
   allowed_computations: [path_join, fan_in_cluster]
   allowed_identifier_schemes: [sha256_salted_v1]
-  max_boundary_hashes: 50      # cap on how many hashed accounts a peer may probe per case
+  max_boundary_hashes: 100      # cap on how many hashed accounts a peer may probe per case
   require_case_ref: true

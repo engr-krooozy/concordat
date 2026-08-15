@@ -6,5 +6,5 @@ rules:
   max_ttl_hours: 48
   allowed_computations: [path_join, fan_in_cluster]
   allowed_identifier_schemes: [sha256_salted_v1]
-  max_boundary_hashes: 20
+  max_boundary_hashes: 60
   require_case_ref: true
