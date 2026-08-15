@@ -26,10 +26,10 @@ purpose is to prove a *human* decided, and that property is unchanged. All data 
 
 - [ ] Functional project meeting track criteria
 - [x] **Hosted project URL** — https://mission-control-fa7ntw3nkq-uc.a.run.app (public, verified)
-- [ ] Text description: features, tech stack, data sources, learnings
+- [x] Text description — drafted in `docs/devpost-description.md` (paste into Devpost)
 - [ ] Code repository (private GitHub OK — grant judge access per Devpost instructions)
 - [ ] README.md with **reproducible setup** (dry-run on clean machine Aug 30)
-- [ ] **Architecture diagram** (`docs/architecture.png` from ARCHITECTURE.md)
+- [x] **Architecture diagram** — `docs/architecture.png` (3000x1875, hand-built; source `docs/architecture.svg`)
 - [ ] Demo video ≤ **4:00**, shows problem, value prop, live demo, **backend running on Google
       Cloud (logs / console / .run.app visible)**, English subtitles
 - [ ] No third-party branding/unlicensed material in video (invent bank names/logos:
@@ -41,8 +41,8 @@ purpose is to prove a *human* decided, and that property is unchanged. All data 
 ## Bonus points (up to 0.6)
 
 - [x] **Gemma** integration — Gemma 3 4B in-container perimeter gate; model size chosen by a measured eval (`scripts/eval_gemma_gate.py`), which is itself worth a line in the video
-- [ ] Blog post on public platform (dev.to / Medium): "Data diplomacy: teaching rival banks'
-      agent fleets to negotiate" — publish Aug 29
+- [x] Blog post drafted — `docs/blog-post.md` ("I taught rival banks' AI agents to negotiate
+      with each other"). Publish to dev.to/Medium by Aug 29 — **needs Mustapha to post**
 - [ ] Social post with `#AllThingsAgenticHackathon` linking the blog — Aug 29
 
 ## Positioning (use consistently: Devpost description, video VO, blog)
