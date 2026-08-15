@@ -1,0 +1,65 @@
+# Build the bank image once, deploy it three times (alpha/meridian/union).
+# gcloud builds submit --config infra/cloudbuild.yaml
+substitutions:
+  _REGION: us-central1
+  _REPO: us-central1-docker.pkg.dev/concordat-hack/concordat
+
+steps:
+  - id: build-bank
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_REPO}/bank:latest", "-f", "services/bank/Dockerfile", "."]
+
+  - id: push-bank
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "${_REPO}/bank:latest"]
+
+  - id: deploy-alpha
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - bank-alpha
+      - --image=${_REPO}/bank:latest
+      - --region=${_REGION}
+      - --service-account=sa-bank-alpha@concordat-hack.iam.gserviceaccount.com
+      - --set-env-vars=BANK=alpha,GCP_PROJECT=concordat-hack
+      - --no-allow-unauthenticated
+      - --memory=1Gi
+      - --max-instances=3
+
+  - id: deploy-meridian
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - bank-meridian
+      - --image=${_REPO}/bank:latest
+      - --region=${_REGION}
+      - --service-account=sa-bank-meridian@concordat-hack.iam.gserviceaccount.com
+      - --set-env-vars=BANK=meridian,GCP_PROJECT=concordat-hack
+      - --no-allow-unauthenticated
+      - --memory=1Gi
+      - --max-instances=3
+
+  - id: deploy-union
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - bank-union
+      - --image=${_REPO}/bank:latest
+      - --region=${_REGION}
+      - --service-account=sa-bank-union@concordat-hack.iam.gserviceaccount.com
+      - --set-env-vars=BANK=union,GCP_PROJECT=concordat-hack
+      - --no-allow-unauthenticated
+      - --memory=1Gi
+      - --max-instances=3
+
+images:
+  - ${_REPO}/bank:latest
+
+options:
+  logging: CLOUD_LOGGING_ONLY
