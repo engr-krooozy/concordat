@@ -37,10 +37,16 @@ def gate(text: str) -> GateResult:
 
     verdict = gemma.looks_like_leak(scrubbed.text)
     if verdict is None:
-        return GateResult(text=scrubbed.text, findings=findings)
+        result = GateResult(text=scrubbed.text, findings=findings)
+        log.info("perimeter gate: %s", result.audit_detail())
+        return result
 
     if verdict:
         findings.append("gemma:residual_disclosure_risk")
         log.warning("local Gemma flagged already-scrubbed text; withholding payload")
-        return GateResult(text="", findings=findings, blocked=True, gemma_checked=True)
-    return GateResult(text=scrubbed.text, findings=findings, gemma_checked=True)
+        blocked = GateResult(text="", findings=findings, blocked=True, gemma_checked=True)
+        log.info("perimeter gate: %s", blocked.audit_detail())
+        return blocked
+    passed = GateResult(text=scrubbed.text, findings=findings, gemma_checked=True)
+    log.info("perimeter gate: %s", passed.audit_detail())
+    return passed

@@ -1,6 +1,7 @@
 """Diplomat: cross-perimeter communication for the fleet. Discovers counterpart fleets via
 the registry, resolves their A2A cards, and exchanges negotiation messages. All outbound
-payloads pass the redaction gate before leaving (Phase 2 day 3 wires Gemma in).
+payloads pass the perimeter gate before leaving: deterministic rules redact, then a Gemma
+running locally in this container gives a second opinion.
 
 Auth: Cloud Run services are private; outbound calls attach an OIDC identity token minted
 for the bank SA, and each bank grants run.invoker to its peers — modeling 'banks accept
@@ -56,6 +57,7 @@ class Diplomat:
         self.cfg = cfg
         self.registry_url = registry_url.rstrip("/")
         self.last_gate_findings: list[str] = []
+        self.last_gate_summary: str = ""
 
     def _gate_outbound(
         self, msg: protocol.NegotiationMessage
@@ -64,6 +66,7 @@ class Diplomat:
         rather stall a negotiation than leak a customer across an institutional boundary.
         """
         findings: list[str] = []
+        summaries: list[str] = []
         updates: dict[str, str] = {}
         for field in FREE_TEXT_FIELDS:
             value = getattr(msg, field, None)
@@ -71,12 +74,14 @@ class Diplomat:
                 continue
             result = gate(value)
             findings.extend(f"{field}/{f}" for f in result.findings)
+            summaries.append(f"{field}: {result.audit_detail()}")
             if result.blocked:
                 raise PayloadWithheld(
                     f"perimeter gate withheld {msg.kind}.{field}: {result.findings}"
                 )
             if result.text != value:
                 updates[field] = result.text
+        self.last_gate_summary = "; ".join(summaries)
         if updates:
             msg = msg.model_copy(update=updates)
             log.info("perimeter gate redacted %s in %s", sorted(updates), msg.kind)

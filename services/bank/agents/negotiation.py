@@ -112,11 +112,11 @@ async def negotiate(
         for peer, card_url in sorted(peers.items()):
             _record(case, "sent", peer, proposal)
             reply = await diplomat.send(card_url, proposal)
-            if diplomat.last_gate_findings:
+            if getattr(diplomat, "last_gate_summary", ""):
                 case.log(
                     f"{cfg.bank}/redactor",
                     "perimeter_gate",
-                    f"peer={peer} withheld: {diplomat.last_gate_findings}",
+                    f"peer={peer} {diplomat.last_gate_summary}",
                 )
             _record(case, "received", peer, reply)
             match reply:
