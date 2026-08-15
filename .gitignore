@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+*.json.key
+service-account*.json
+node_modules/
+.next/
+dist/
+.pytest_cache/
+.ruff_cache/
+data/generator/output/
+*.parquet
+.DS_Store

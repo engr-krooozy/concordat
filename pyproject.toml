@@ -1,0 +1,28 @@
+[project]
+name = "concordat"
+version = "0.1.0"
+description = "Sovereign bank agent fleets negotiating privacy-safe joint fraud investigations"
+requires-python = ">=3.12"
+dependencies = [
+    "google-adk",
+    "a2a-sdk",
+    "google-cloud-aiplatform",
+    "google-cloud-bigquery",
+    "google-cloud-firestore",
+    "google-cloud-pubsub",
+    "fastapi",
+    "uvicorn",
+    "pydantic>=2",
+    "pyyaml",
+]
+
+[dependency-groups]
+dev = ["pytest", "pytest-asyncio", "ruff", "faker"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
