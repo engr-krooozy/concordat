@@ -25,12 +25,21 @@ log = logging.getLogger("concordat.diplomat")
 
 
 def _id_token(cfg: BankConfig, audience: str) -> str:
-    """OIDC identity token AS the bank service account for a peer's Cloud Run audience."""
-    creds = impersonated_credentials.IDTokenCredentials(
-        bank_credentials(cfg), target_audience=audience, include_email=True
-    )
-    creds.refresh(google.auth.transport.requests.Request())
-    return creds.token
+    """OIDC identity token AS the bank service account for a peer's Cloud Run audience.
+
+    Locally we mint it via impersonation; on Cloud Run the ambient identity IS the bank SA,
+    so the metadata server issues it directly.
+    """
+    request = google.auth.transport.requests.Request()
+    if cfg.impersonate_locally:
+        creds = impersonated_credentials.IDTokenCredentials(
+            bank_credentials(cfg), target_audience=audience, include_email=True
+        )
+        creds.refresh(request)
+        return creds.token
+    from google.oauth2 import id_token as id_token_mod
+
+    return id_token_mod.fetch_id_token(request, audience)
 
 
 class Diplomat:
