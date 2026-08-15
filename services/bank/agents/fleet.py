@@ -81,6 +81,12 @@ def build_tools(ctx: FleetContext):
         if not ctx.frontier:
             return {"hops": [], "frontier": [], "boundary_edges": [], "note": "frontier empty"}
         hops = ctx.ledger.outgoing_hops(ctx.frontier, ctx.frontier_after, 4, min_amount)
+        if not hops:
+            # keep the frontier so the agent can retry with a lower threshold: mule networks
+            # fan out into many small transfers, which a high min_amount hides
+            ctx.case.log(f"{ctx.cfg.bank}/tracer", "hop_empty", f"min_amount={min_amount}")
+            return {"hops": [], "frontier": ctx.frontier, "boundary_edges": [],
+                    "note": "no hops at this min_amount; retry lower before concluding"}
         new_frontier: list[str] = []
         boundaries = []
         for h in hops:
@@ -132,8 +138,11 @@ def build_investigator(cfg: BankConfig, ctx: FleetContext) -> Agent:
             "Given a fraud report, work strictly with tools:\n"
             "1. find_large_outflows on the reported day/amount; pick the txn matching the report.\n"
             "2. open_trace on that txn_id.\n"
-            "3. trace_next_hop repeatedly (use min_amount ~40% of the victim amount to skip "
-            "noise) until the frontier is empty.\n"
+            "3. trace_next_hop repeatedly until the frontier is empty. Start with min_amount "
+            "~40% of the victim amount; whenever a hop returns no results while the frontier "
+            "is NOT empty, retry the same hop with min_amount divided by 10 (down to 1% of "
+            "the victim amount) before concluding the trail is cold — laundering networks "
+            "fan out into many small transfers, and a high threshold hides them.\n"
             "4. close_trace with a concise factual summary naming accounts, amounts, and any "
             "funds that left our bank (boundary edges) — do not speculate about other banks.\n"
             "Never invent transaction data; only report what tools returned."
