@@ -1,0 +1,10 @@
+# Data-sharing policy for Bank Meridian — the strict one. Its higher k floor is what
+# forces the counter-proposal round in any negotiation alpha opens at k=10.
+version: meridian-policy-v1
+rules:
+  min_k_threshold: 25
+  max_ttl_hours: 48
+  allowed_computations: [path_join, fan_in_cluster]
+  allowed_identifier_schemes: [sha256_salted_v1]
+  max_boundary_hashes: 20
+  require_case_ref: true

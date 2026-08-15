@@ -19,6 +19,7 @@ class CaseEvent(BaseModel):
         "case.kickoff",  # analyst filed a fraud report
         "case.trace_done",  # investigation finished (dead_end or closed)
         "case.report_done",  # SAR-style report drafted
+        "case.negotiated",  # concordat signed (or negotiation rejected) — clean room next
     ]
     bank: str
     case_id: str

@@ -67,6 +67,9 @@ class CaseState(BaseModel):
     audit: list[AuditEntry] = []
     summary: str = ""
     report: str = ""  # SAR-style case file drafted by the reporter agent
+    case_salt: str = ""  # per-case identifier-hashing salt (set when negotiation opens)
+    negotiation_transcript: list[dict] = []  # every sent/received NegotiationMessage
+    concordat: dict | None = None  # the signed agreement (ConcordatSigned dump)
 
     def log(self, actor: str, action: str, detail: str = "") -> None:
         self.audit.append(

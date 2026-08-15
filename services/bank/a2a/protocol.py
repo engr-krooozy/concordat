@@ -46,6 +46,7 @@ class InvestigationRequest(BaseModel):
     identifier_scheme: str
     ttl_hours: int
     boundary_hashes: list[str]  # salted hashes of dst accounts at our boundary
+    case_salt: str  # per-case salt all parties use so hashed identifiers join in the room
 
 
 class PolicyVerdict(BaseModel):
@@ -102,7 +103,13 @@ class RoomDissolved(BaseModel):
 
 
 NegotiationMessage = Annotated[
-    Handshake | HandshakeAck | InvestigationRequest | PolicyVerdict | CounterProposal | ConcordatSigned | RoomDissolved,
+    Handshake
+    | HandshakeAck
+    | InvestigationRequest
+    | PolicyVerdict
+    | CounterProposal
+    | ConcordatSigned
+    | RoomDissolved,
     Field(discriminator="kind"),
 ]
 

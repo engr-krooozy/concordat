@@ -1,0 +1,10 @@
+# Data-sharing policy for Bank Alpha. Machine-readable; the deterministic evaluator in
+# engine.py is the ONLY component that interprets this — LLM output never overrides it.
+version: alpha-policy-v1
+rules:
+  min_k_threshold: 10          # smallest aggregate group size we will ever reveal
+  max_ttl_hours: 72
+  allowed_computations: [path_join, fan_in_cluster]
+  allowed_identifier_schemes: [sha256_salted_v1]
+  max_boundary_hashes: 50      # cap on how many hashed accounts a peer may probe per case
+  require_case_ref: true

@@ -26,8 +26,9 @@ async def main() -> None:
     for bank, card_url in sorted(peers.items()):
         reply = await diplomat.send(
             card_url,
-            protocol.Handshake(bank=cfg.bank, case_ref="ref-cloud-001",
-                               identifier_scheme="sha256_salted_v1"),
+            protocol.Handshake(
+                bank=cfg.bank, case_ref="ref-cloud-001", identifier_scheme="sha256_salted_v1"
+            ),
         )
         assert isinstance(reply, protocol.HandshakeAck) and reply.bank == bank
         print(f"A2A handshake OK: alpha -> {bank} ({reply.policy_version})")

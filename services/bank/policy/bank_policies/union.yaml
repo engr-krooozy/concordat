@@ -1,0 +1,9 @@
+# Data-sharing policy for Bank Union.
+version: union-policy-v1
+rules:
+  min_k_threshold: 15
+  max_ttl_hours: 72
+  allowed_computations: [path_join, fan_in_cluster]
+  allowed_identifier_schemes: [sha256_salted_v1]
+  max_boundary_hashes: 40
+  require_case_ref: true
