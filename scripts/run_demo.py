@@ -32,23 +32,32 @@ def gcloud(*args: str) -> str:
     import os
 
     env = {**os.environ, "CLOUDSDK_ACTIVE_CONFIG_NAME": "concordat"}
-    return subprocess.run(["gcloud", *args], capture_output=True, text=True,
-                          env=env, check=True).stdout.strip()
+    return subprocess.run(
+        ["gcloud", *args], capture_output=True, text=True, env=env, check=True
+    ).stdout.strip()
 
 
 def call(path: str, method: str = "GET") -> dict:
     token = gcloud("auth", "print-identity-token")
-    resp = httpx.request(method, f"{BANK_URL}{path}", timeout=90,
-                         headers={"Authorization": f"Bearer {token}"})
+    resp = httpx.request(
+        method, f"{BANK_URL}{path}", timeout=90, headers={"Authorization": f"Bearer {token}"}
+    )
     resp.raise_for_status()
     return resp.json()
 
 
 def publish(case_id: str) -> None:
-    payload = json.dumps({"type": "case.kickoff", "bank": "alpha",
-                          "case_id": case_id, "report": REPORT})
-    gcloud("pubsub", "topics", "publish", "case-events-alpha",
-           f"--project={PROJECT}", f"--message={payload}")
+    payload = json.dumps(
+        {"type": "case.kickoff", "bank": "alpha", "case_id": case_id, "report": REPORT}
+    )
+    gcloud(
+        "pubsub",
+        "topics",
+        "publish",
+        "case-events-alpha",
+        f"--project={PROJECT}",
+        f"--message={payload}",
+    )
 
 
 def show(case: dict, seen: set[str]) -> None:
@@ -92,13 +101,17 @@ def main() -> None:
 
     if case.get("concordat"):
         c = case["concordat"]
-        print(f"\n[2] concordat signed: parties={c['parties']} k={c['k_threshold']} "
-              f"ttl={c['ttl_hours']}h")
+        print(
+            f"\n[2] concordat signed: parties={c['parties']} k={c['k_threshold']} "
+            f"ttl={c['ttl_hours']}h"
+        )
     if case.get("finding"):
         f = case["finding"]
         chain = " -> ".join(h["bank"] for h in f["hops"])
-        print(f"[3] JOINT FINDING: {f['mule_accounts']} mule accounts across {chain}; "
-              f"{f['total_ngn']:,.0f} NGN at {f['cashout_cluster']}")
+        print(
+            f"[3] JOINT FINDING: {f['mule_accounts']} mule accounts across {chain}; "
+            f"{f['total_ngn']:,.0f} NGN at {f['cashout_cluster']}"
+        )
 
     if case["status"] != "awaiting_approval":
         print(f"\ncase ended as {case['status']}")

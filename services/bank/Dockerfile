@@ -6,6 +6,16 @@ RUN pip install --no-cache-dir \
     google-adk "a2a-sdk[http-server]" httpx google-cloud-aiplatform google-cloud-bigquery \
     google-cloud-firestore google-cloud-pubsub fastapi uvicorn "pydantic>=2" pyyaml
 
+# Local Gemma for the perimeter gate: prebuilt CPU wheel (no toolchain, no compile) plus the
+# quantised model baked into the image, so the gate never calls out to inspect text.
+RUN pip install --no-cache-dir llama-cpp-python \
+      --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu \
+    || echo "llama-cpp unavailable; perimeter gate will run on deterministic rules only"
+# 4B is the smallest Gemma that actually classifies rather than answering one word to
+# everything — see the measured comparison in services/bank/redaction/gemma.py
+ADD https://huggingface.co/unsloth/gemma-3-4b-it-GGUF/resolve/main/gemma-3-4b-it-Q4_K_M.gguf \
+    /app/models/gemma-3-4b-it-Q4_K_M.gguf
+
 COPY services/ services/
 
 # BANK env var selects the fleet identity; service account is ambient on Cloud Run

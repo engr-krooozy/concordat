@@ -25,7 +25,9 @@ steps:
       - --service-account=sa-bank-alpha@concordat-hack.iam.gserviceaccount.com
       - --set-env-vars=BANK=alpha,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-alpha-fa7ntw3nkq-uc.a.run.app
       - --no-allow-unauthenticated
-      - --memory=1Gi
+      - --memory=4Gi
+      - --cpu=2
+      - --timeout=900
       - --max-instances=3
 
   - id: deploy-meridian
@@ -40,7 +42,9 @@ steps:
       - --service-account=sa-bank-meridian@concordat-hack.iam.gserviceaccount.com
       - --set-env-vars=BANK=meridian,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-meridian-fa7ntw3nkq-uc.a.run.app
       - --no-allow-unauthenticated
-      - --memory=1Gi
+      - --memory=4Gi
+      - --cpu=2
+      - --timeout=900
       - --max-instances=3
 
   - id: deploy-union
@@ -55,7 +59,9 @@ steps:
       - --service-account=sa-bank-union@concordat-hack.iam.gserviceaccount.com
       - --set-env-vars=BANK=union,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-union-fa7ntw3nkq-uc.a.run.app
       - --no-allow-unauthenticated
-      - --memory=1Gi
+      - --memory=4Gi
+      - --cpu=2
+      - --timeout=900
       - --max-instances=3
 
   - id: deploy-registry

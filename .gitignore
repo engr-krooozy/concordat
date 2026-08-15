@@ -13,3 +13,5 @@ dist/
 data/generator/output/
 *.parquet
 .DS_Store
+models/
+*.gguf
