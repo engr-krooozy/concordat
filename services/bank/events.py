@@ -24,7 +24,7 @@ class CaseEvent(BaseModel):
         "case.approved",  # analyst approved enforcement (report field carries approver)
     ]
     bank: str
-    case_id: str
+    case_id: str = ""  # kickoff may leave this empty; the fleet mints one (scheduled runs)
     report: str = ""  # kickoff only: the analyst's fraud report text
 
 

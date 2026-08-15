@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#ffd479"/>
+    </marker>
+    <marker id="arwd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6ea8ff"/>
+    </marker>
+    <marker id="arwg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b96ad"/>
+    </marker>
+  </defs>
+
+  <rect width="1600" height="1000" fill="#0c0f16"/>
+
+  <text x="52" y="56" fill="#e8ecf5" font-size="30" font-weight="bold">Concordat</text>
+  <text x="52" y="84" fill="#8b96ad" font-size="16">Sovereign bank fleets negotiate a joint fraud investigation. Raw data never crosses a perimeter.</text>
+
+  <!-- ============ PERIMETERS ============ -->
+  <!-- Alpha -->
+  <rect x="52" y="120" width="440" height="330" rx="14" fill="#111726" stroke="#6ea8ff" stroke-width="2"/>
+  <text x="72" y="150" fill="#6ea8ff" font-size="17" font-weight="bold">Bank Alpha — perimeter</text>
+  <text x="72" y="172" fill="#8b96ad" font-size="12">service account sa-bank-alpha · initiator</text>
+
+  <rect x="72" y="186" width="180" height="46" rx="8" fill="#1a2133" stroke="#2b3350"/>
+  <text x="84" y="206" fill="#e8ecf5" font-size="13">Detector + Tracer</text>
+  <text x="84" y="223" fill="#8b96ad" font-size="11">ADK · Gemini 3.5 Flash</text>
+
+  <rect x="266" y="186" width="206" height="46" rx="8" fill="#1a2133" stroke="#2b3350"/>
+  <text x="278" y="206" fill="#e8ecf5" font-size="13">Diplomat</text>
+  <text x="278" y="223" fill="#8b96ad" font-size="11">drafts asks · never decides</text>
+
+  <rect x="72" y="246" width="180" height="52" rx="8" fill="#241f10" stroke="#ffd479"/>
+  <text x="84" y="266" fill="#ffd479" font-size="13" font-weight="bold">Policy engine</text>
+  <text x="84" y="284" fill="#c9b27a" font-size="11">deterministic YAML · has veto</text>
+
+  <rect x="266" y="246" width="206" height="52" rx="8" fill="#241f10" stroke="#ffd479"/>
+  <text x="278" y="266" fill="#ffd479" font-size="13" font-weight="bold">Perimeter gate</text>
+  <text x="278" y="284" fill="#c9b27a" font-size="11">rules + local Gemma 3 4B</text>
+
+  <rect x="72" y="312" width="400" height="52" rx="8" fill="#1a2133" stroke="#2b3350"/>
+  <text x="84" y="332" fill="#e8ecf5" font-size="13">Enforcer + Reporter</text>
+  <text x="84" y="350" fill="#8b96ad" font-size="11">acts only on Alpha's own accounts, after human approval</text>
+
+  <rect x="72" y="378" width="400" height="52" rx="8" fill="#101a2a" stroke="#3d5480"/>
+  <text x="84" y="398" fill="#9dc0ff" font-size="13">BigQuery · bank_alpha</text>
+  <text x="84" y="416" fill="#8b96ad" font-size="11">3.7M rows · readable by this fleet alone (IAM)</text>
+
+  <!-- Meridian -->
+  <rect x="580" y="120" width="440" height="330" rx="14" fill="#111726" stroke="#b98bff" stroke-width="2"/>
+  <text x="600" y="150" fill="#b98bff" font-size="17" font-weight="bold">Bank Meridian — perimeter</text>
+  <text x="600" y="172" fill="#8b96ad" font-size="12">service account sa-bank-meridian · identical image, own policy</text>
+  <rect x="600" y="186" width="400" height="46" rx="8" fill="#1a2133" stroke="#2b3350"/>
+  <text x="612" y="206" fill="#e8ecf5" font-size="13">Same fleet, same code</text>
+  <text x="612" y="223" fill="#8b96ad" font-size="11">one container image, deployed three times</text>
+  <rect x="600" y="246" width="400" height="52" rx="8" fill="#241f10" stroke="#ffd479"/>
+  <text x="612" y="266" fill="#ffd479" font-size="13" font-weight="bold">Policy engine — the strict one</text>
+  <text x="612" y="284" fill="#c9b27a" font-size="11">k ≥ 25, TTL ≤ 48h  →  forces the counter-offer</text>
+  <rect x="600" y="378" width="400" height="52" rx="8" fill="#170f26" stroke="#6a4f9e"/>
+  <text x="612" y="398" fill="#cbb2ff" font-size="13">BigQuery · bank_meridian</text>
+  <text x="612" y="416" fill="#8b96ad" font-size="11">3.7M rows · invisible to Alpha and Union</text>
+
+  <!-- Union -->
+  <rect x="1108" y="120" width="440" height="330" rx="14" fill="#111726" stroke="#3ecf8e" stroke-width="2"/>
+  <text x="1128" y="150" fill="#3ecf8e" font-size="17" font-weight="bold">Bank Union — perimeter</text>
+  <text x="1128" y="172" fill="#8b96ad" font-size="12">service account sa-bank-union</text>
+  <rect x="1128" y="186" width="400" height="46" rx="8" fill="#1a2133" stroke="#2b3350"/>
+  <text x="1140" y="206" fill="#e8ecf5" font-size="13">Same fleet, same code</text>
+  <text x="1140" y="223" fill="#8b96ad" font-size="11">holds the cash-out end of the trail</text>
+  <rect x="1128" y="246" width="400" height="52" rx="8" fill="#241f10" stroke="#ffd479"/>
+  <text x="1140" y="266" fill="#ffd479" font-size="13" font-weight="bold">Policy engine</text>
+  <text x="1140" y="284" fill="#c9b27a" font-size="11">k ≥ 15, TTL ≤ 72h</text>
+  <rect x="1128" y="378" width="400" height="52" rx="8" fill="#0f2018" stroke="#2e7d5b"/>
+  <text x="1140" y="398" fill="#93e6c0" font-size="13">BigQuery · bank_union</text>
+  <text x="1140" y="416" fill="#8b96ad" font-size="11">3.7M rows · sovereign</text>
+
+  <!-- ============ A2A NEGOTIATION ============ -->
+  <line x1="492" y1="270" x2="576" y2="270" stroke="#ffd479" stroke-width="2.5" marker-end="url(#arw)"/>
+  <line x1="576" y1="300" x2="496" y2="300" stroke="#ffd479" stroke-width="2.5" marker-end="url(#arw)"/>
+  <text x="534" y="256" fill="#ffd479" font-size="11" text-anchor="middle">A2A</text>
+  <line x1="1020" y1="270" x2="1104" y2="270" stroke="#ffd479" stroke-width="2.5" marker-end="url(#arw)"/>
+  <line x1="1104" y1="300" x2="1024" y2="300" stroke="#ffd479" stroke-width="2.5" marker-end="url(#arw)"/>
+  <text x="1062" y="256" fill="#ffd479" font-size="11" text-anchor="middle">A2A</text>
+
+  <!-- Registry -->
+  <rect x="620" y="490" width="360" height="62" rx="10" fill="#1a2133" stroke="#6ea8ff"/>
+  <text x="640" y="514" fill="#9dc0ff" font-size="14" font-weight="bold">Agent-card registry — the fleet catalog</text>
+  <text x="640" y="534" fill="#8b96ad" font-size="11">/.well-known/agent-card.json · discovery only, never capability</text>
+
+  <!-- ============ NEGOTIATION SEQUENCE ============ -->
+  <rect x="52" y="490" width="520" height="240" rx="12" fill="#111726" stroke="#2b3350"/>
+  <text x="72" y="516" fill="#e8ecf5" font-size="15" font-weight="bold">The negotiation (what actually ran)</text>
+  <text x="72" y="546" fill="#8b96ad" font-size="12">Alpha  →  k=10, TTL 72h</text>
+  <text x="72" y="570" fill="#f6c453" font-size="12">Meridian  ←  counter: k=25, TTL 48h</text>
+  <text x="72" y="594" fill="#f6c453" font-size="12">Union  ←  counter: k=15, TTL 72h</text>
+  <text x="72" y="618" fill="#8b96ad" font-size="12">Alpha  →  concedes to strictest: k=25, TTL 48h</text>
+  <text x="72" y="642" fill="#3ecf8e" font-size="12">Meridian, Union  ←  accept · all three countersign</text>
+  <text x="72" y="676" fill="#8b96ad" font-size="11">Gemini drafts the wording. The policy engine decides.</text>
+  <text x="72" y="696" fill="#8b96ad" font-size="11">No phrasing of a request can talk a policy round.</text>
+
+  <!-- ============ CLEAN ROOM ============ -->
+  <rect x="620" y="580" width="928" height="172" rx="12" fill="#141010" stroke="#ff9f6b" stroke-width="2"/>
+  <text x="640" y="608" fill="#ffb98c" font-size="16" font-weight="bold">Ephemeral clean room — compiled from the signed concordat, TTL 48h</text>
+  <text x="640" y="632" fill="#8b96ad" font-size="12">Each bank publishes a view carrying BigQuery's aggregation_threshold_policy at the agreed k = 25.</text>
+  <text x="640" y="654" fill="#ff9f6b" font-size="12.5" font-weight="bold">SELECT of a single row is refused by BigQuery itself — not by our code.</text>
+  <text x="640" y="678" fill="#8b96ad" font-size="12">Probes address counterparties, never the privacy unit, so no customer can be singled out.</text>
+  <text x="640" y="702" fill="#8b96ad" font-size="12">Dissolution is cooperative: each bank revokes its own view; the room runner has no rights inside any dataset.</text>
+  <text x="640" y="726" fill="#8b96ad" font-size="12">Alpha needs no threshold on its own hop — a bank requires no privacy protection against itself.</text>
+
+  <line x1="1040" y1="430" x2="1040" y2="576" stroke="#ff9f6b" stroke-width="2" marker-end="url(#arw)"/>
+  <line x1="1440" y1="430" x2="1440" y2="576" stroke="#ff9f6b" stroke-width="2" marker-end="url(#arw)"/>
+  <text x="1052" y="498" fill="#ff9f6b" font-size="11">k-thresholded</text>
+  <text x="1052" y="514" fill="#ff9f6b" font-size="11">aggregate only</text>
+  <text x="1452" y="498" fill="#ff9f6b" font-size="11">k-thresholded</text>
+  <text x="1452" y="514" fill="#ff9f6b" font-size="11">aggregate only</text>
+
+  <!-- ============ SPINE ============ -->
+  <rect x="52" y="770" width="1496" height="86" rx="12" fill="#111726" stroke="#2b3350"/>
+  <text x="72" y="798" fill="#e8ecf5" font-size="14" font-weight="bold">Asynchronous spine — no request/response chain anywhere in a case</text>
+  <text x="72" y="822" fill="#8b96ad" font-size="12">Pub/Sub case events  ·  Firestore case state, negotiation transcripts, append-only audit  ·  Cloud Run (one image, three fleets + registry + mission control)  ·  Cloud Build CI/CD</text>
+  <text x="72" y="844" fill="#8b96ad" font-size="12">Any service can die mid-case; the next event resumes it from Firestore.</text>
+
+  <!-- ============ OUTCOME ============ -->
+  <rect x="52" y="878" width="1000" height="82" rx="12" fill="#241f10" stroke="#ffd479" stroke-width="2"/>
+  <text x="72" y="906" fill="#ffd479" font-size="15" font-weight="bold">The finding no single bank could reach</text>
+  <text x="72" y="930" fill="#e8ecf5" font-size="13">30 mule accounts across Alpha → Meridian → Union · NGN 2,316,720 concentrated at one cash-out cluster</text>
+  <text x="72" y="950" fill="#8b96ad" font-size="11.5">Revealed only because the ring is larger than the privacy floor the banks agreed to. Smaller groups stay hidden.</text>
+
+  <rect x="1076" y="878" width="472" height="82" rx="12" fill="#111726" stroke="#3ecf8e" stroke-width="2"/>
+  <text x="1096" y="906" fill="#3ecf8e" font-size="15" font-weight="bold">Then, and only then, a human</text>
+  <text x="1096" y="930" fill="#e8ecf5" font-size="13">Analyst approves · Alpha freezes 30 of its own accounts</text>
+  <text x="1096" y="950" fill="#8b96ad" font-size="11.5">No agent acts across a boundary. No peer's customer is ever named.</text>
+</svg>

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import logging
 import os
+import uuid
 
 from services.bank.agents.diplomat import Diplomat
 from services.bank.agents.enforcer import close as close_case
@@ -47,7 +48,9 @@ class Orchestrator:
                 await self._enforce(event)
 
     async def _kickoff(self, event: CaseEvent) -> None:
-        case = CaseState(case_id=event.case_id, bank=self.cfg.bank)
+        # scheduled kickoffs arrive without an id — a fixed one would overwrite the same case
+        case_id = event.case_id or f"case-{uuid.uuid4().hex[:8]}"
+        case = CaseState(case_id=case_id, bank=self.cfg.bank)
         case.log(f"{self.cfg.bank}/intake", "report", event.report)
         self.store.save(case)
         await run_investigation(self.cfg, case, event.report)
