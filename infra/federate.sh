@@ -84,8 +84,10 @@ retry gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount
 retry gcloud iam service-accounts add-iam-policy-binding "$SA" \
   --member="user:adekunlemustapha2001@gmail.com" \
   --role=roles/iam.serviceAccountTokenCreator --project="$PROJECT" -q >/dev/null
-# 5. commons Cloud Build may deploy into this project and act as this fleet
-CB="$(gcloud projects describe "$COMMONS" --format='value(projectNumber)')@cloudbuild.gserviceaccount.com"
+# 5. the commons build identity may deploy into this project and act as this fleet.
+#    Cloud Build runs as the COMPUTE default service account, not the legacy
+#    @cloudbuild one — granting the legacy identity looks right and fails at deploy time.
+CB="$(gcloud projects describe "$COMMONS" --format='value(projectNumber)')-compute@developer.gserviceaccount.com"
 retry gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$CB" \
   --role=roles/run.admin -q >/dev/null
 retry gcloud iam service-accounts add-iam-policy-binding "$SA" --member="serviceAccount:$CB" \

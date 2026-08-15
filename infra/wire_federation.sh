@@ -82,4 +82,16 @@ for b in "${BANKS[@]}"; do
     -d "{\"bank\": \"$b\", \"card_url\": \"$URL/.well-known/agent-card.json\"}" >/dev/null
   echo "  registered $b -> $URL"
 done
+echo "== tell mission control where the fleets are =="
+# The observatory holds run.invoker on each fleet but NOT run.services.get: it may knock on a
+# bank's door, not enumerate what is behind it. So it is handed the endpoints rather than
+# discovering them, which keeps the grant list one role shorter.
+ENVS="GCP_PROJECT=$COMMONS"
+for b in "${BANKS[@]}"; do
+  ENVS="$ENVS,BANK_$(echo "$b" | tr '[:lower:]' '[:upper:]')_URL=$(url_of "$b")"
+done
+gcloud run services update mission-control --region="$REGION" --project="$COMMONS" \
+  --update-env-vars="$ENVS" -q >/dev/null
+echo "  mission control pointed at all three fleets"
+
 echo "federation wired"

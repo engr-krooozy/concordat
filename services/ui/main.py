@@ -37,7 +37,20 @@ def bank_project(bank: str) -> str:
 # One Firestore per bank, because each bank keeps its own case state in its own project.
 # Mission control is an observatory: every bank grants it read access to case metadata, and
 # none of them grants it anything else. There is no single database behind this view.
-_stores = {b: firestore.Client(project=bank_project(b)) for b in BANKS}
+#
+# Built lazily and per-bank: a federation where one member is unreachable should degrade to
+# showing the others, not fail to start.
+@lru_cache(maxsize=len(BANKS))
+def _store(bank: str) -> firestore.Client:
+    return firestore.Client(project=bank_project(bank))
+
+
+def _stores_items():
+    for bank in BANKS:
+        try:
+            yield bank, _store(bank)
+        except Exception as exc:  # noqa: BLE001 - one silent member must not blind the rest
+            log.warning("cannot reach %s's case store: %s", bank, exc)
 
 
 @lru_cache(maxsize=1)
@@ -63,7 +76,7 @@ def healthz() -> dict:
 @app.get("/api/cases")
 def list_cases(limit: int = 20) -> list[dict]:
     """Recent cases across all fleets, newest first."""
-    docs = [d.to_dict() for store in _stores.values() for d in store.collection("cases").stream()]
+    docs = [d.to_dict() for _, store in _stores_items() for d in store.collection("cases").stream()]
     docs.sort(key=lambda c: c.get("opened_at", ""), reverse=True)
     return [
         {
@@ -80,7 +93,7 @@ def list_cases(limit: int = 20) -> list[dict]:
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str) -> dict:
-    for store in _stores.values():
+    for _, store in _stores_items():
         snap = store.collection("cases").document(case_id).get()
         if snap.exists:
             return snap.to_dict()
@@ -91,7 +104,7 @@ def get_case(case_id: str) -> dict:
 def peer_transcripts(case_id: str) -> list[dict]:
     """The other side of the conversation: what each peer's policy engine recorded."""
     out = []
-    for bank, store in _stores.items():
+    for bank, store in _stores_items():
         snap = store.collection("negotiations").document(f"{bank}:{case_id}").get()
         if snap.exists:
             out.append(snap.to_dict())

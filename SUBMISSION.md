@@ -4,19 +4,27 @@ Deadline: **Aug 31, 2026, 5:00 PM PDT = Sep 1, 1:00 AM WAT. Internal stop: Aug 3
 Track entered: **The Fortified Enterprise Fleet**. Also eligible: Individual/Hobbyist (if solo),
 Best Architectural Design, Grand Prize.
 
-## Live deployment (verified 2026-08-15)
+## Live deployment — four GCP projects (verified 2026-08-15)
 
-| What | URL |
-|---|---|
-| **Hosted project (public)** | https://mission-control-fa7ntw3nkq-uc.a.run.app |
-| Bank Alpha fleet (private) | https://bank-alpha-fa7ntw3nkq-uc.a.run.app |
-| Bank Meridian fleet (private) | https://bank-meridian-fa7ntw3nkq-uc.a.run.app |
-| Bank Union fleet (private) | https://bank-union-fa7ntw3nkq-uc.a.run.app |
-| Agent-card registry (private) | https://registry-fa7ntw3nkq-uc.a.run.app |
+Each bank is a **separate project**. The differing Cloud Run hostname hashes below are
+themselves evidence: these services were not deployed side by side.
 
-Verified anonymously end to end: the dashboard loads, lists real cases, and the approval
-button drives a case from `awaiting_approval` through `enforcing` to `closed` with the
-approver recorded in the audit trail.
+| What | Project | URL |
+|---|---|---|
+| **Hosted project (public)** | concordat-hack | https://mission-control-fa7ntw3nkq-uc.a.run.app |
+| Bank Alpha fleet (private) | concordat-alpha | https://bank-alpha-4u5ubaqvyq-uc.a.run.app |
+| Bank Meridian fleet (private) | concordat-meridian | https://bank-meridian-omz2lybk2q-uc.a.run.app |
+| Bank Union fleet (private) | concordat-union | https://bank-union-ui3fivllxa-uc.a.run.app |
+| Agent-card registry (private) | concordat-hack | https://registry-fa7ntw3nkq-uc.a.run.app |
+
+Verified anonymously end to end: the dashboard aggregates case state from three separate
+Firestores, and the approval button reaches across a project boundary to drive a case from
+`awaiting_approval` through `enforcing` to `closed`, with the approver in the audit trail.
+
+**The claim worth making in the video:** `scripts/verify_sovereignty.py` shows no bank's
+identity appears in any peer's project, then has Alpha's fleet read its own ledger
+(3,743,998 rows) and a peer's (403 from Google). In one project you can only show you chose
+not to grant access. Across projects, the access does not exist to grant.
 
 **Known limitation to state plainly if asked:** the approval endpoint is unauthenticated so
 judges can exercise the gate. In production it would sit behind the bank's SSO — the gate's

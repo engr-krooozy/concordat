@@ -18,8 +18,13 @@ import uuid
 
 import httpx
 
-PROJECT = "concordat-hack"
-BANK_URL = "https://bank-alpha-fa7ntw3nkq-uc.a.run.app"
+# alpha now lives in its own project, and its URL is discovered rather than hardcoded
+PROJECT = "concordat-alpha"
+
+
+def _bank_alpha_url() -> str:
+    return gcloud("run", "services", "describe", "bank-alpha", "--region=us-central1",
+                  f"--project={PROJECT}", "--format=value(status.url)")
 REPORT = (
     "Customer fraud report: account holder of ALP-9000001 reports approximately 2.4 million "
     "naira stolen via a web transfer they did not authorize on 2026-08-12 (afternoon, WAT). "
@@ -40,7 +45,10 @@ def gcloud(*args: str) -> str:
 def call(path: str, method: str = "GET") -> dict:
     token = gcloud("auth", "print-identity-token")
     resp = httpx.request(
-        method, f"{BANK_URL}{path}", timeout=90, headers={"Authorization": f"Bearer {token}"}
+        method,
+        f"{_bank_alpha_url()}{path}",
+        timeout=90,
+        headers={"Authorization": f"Bearer {token}"},
     )
     resp.raise_for_status()
     return resp.json()
