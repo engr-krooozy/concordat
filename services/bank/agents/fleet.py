@@ -7,22 +7,30 @@ results — not model text — are what mutate the case.
 
 from __future__ import annotations
 
-import os
 from datetime import UTC, datetime, timedelta
 
 from google.adk.agents import Agent
+from google.adk.models.google_llm import Gemini
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from services.bank.auth import bank_credentials
 from services.bank.case import BoundaryEdge, CaseState, Status
 from services.bank.config import BankConfig
 from services.bank.ledger import Ledger
 
 
-def _use_vertex(cfg: BankConfig) -> None:
-    os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "1")
-    os.environ.setdefault("GOOGLE_CLOUD_PROJECT", cfg.project)
-    os.environ.setdefault("GOOGLE_CLOUD_LOCATION", cfg.vertex_location)
+def bank_model(cfg: BankConfig) -> Gemini:
+    """Gemini client running AS the bank service account (sovereignty even for model calls)."""
+    return Gemini(
+        model=cfg.model,
+        client_kwargs={
+            "vertexai": True,
+            "project": cfg.project,
+            "location": cfg.vertex_location,
+            "credentials": bank_credentials(cfg),
+        },
+    )
 
 
 class FleetContext:
@@ -115,10 +123,9 @@ def build_tools(ctx: FleetContext):
 
 
 def build_investigator(cfg: BankConfig, ctx: FleetContext) -> Agent:
-    _use_vertex(cfg)
     return Agent(
         name=f"{cfg.bank}_investigator",
-        model=cfg.model,
+        model=bank_model(cfg),
         instruction=(
             f"You are the fraud investigation agent for bank '{cfg.bank}'. You can only see "
             f"this bank's own ledger — that is a legal boundary, not a technical bug.\n"

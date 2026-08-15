@@ -9,14 +9,11 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import google.auth
-from google.auth import impersonated_credentials
 from google.cloud import bigquery
 from pydantic import BaseModel
 
+from services.bank.auth import bank_credentials
 from services.bank.config import BankConfig
-
-_SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 
 
 class Txn(BaseModel):
@@ -34,21 +31,16 @@ class Txn(BaseModel):
 class Ledger:
     def __init__(self, cfg: BankConfig):
         self.cfg = cfg
-        creds, _ = google.auth.default(scopes=_SCOPES)
-        if cfg.impersonate_locally:
-            creds = impersonated_credentials.Credentials(
-                source_credentials=creds,
-                target_principal=cfg.service_account,
-                target_scopes=_SCOPES,
-            )
-        self.client = bigquery.Client(project=cfg.project, credentials=creds)
+        self.client = bigquery.Client(project=cfg.project, credentials=bank_credentials(cfg))
         self.table = f"`{cfg.project}.{cfg.dataset}.transactions`"
 
     def _query(self, sql: str, **params) -> list[Txn]:
         job_params = []
         for k, v in params.items():
-            if isinstance(v, float):
-                job_params.append(bigquery.ScalarQueryParameter(k, "FLOAT64", v))
+            if isinstance(v, bool):
+                job_params.append(bigquery.ScalarQueryParameter(k, "BOOL", v))
+            elif isinstance(v, (int, float)):
+                job_params.append(bigquery.ScalarQueryParameter(k, "FLOAT64", float(v)))
             elif isinstance(v, datetime):
                 job_params.append(bigquery.ScalarQueryParameter(k, "TIMESTAMP", v))
             elif isinstance(v, list):
