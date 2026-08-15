@@ -1,0 +1,26 @@
+# Synthetic ledger config. Deterministic: same file -> same bytes. See /synthetic-ledger skill.
+seed: 20260831
+window_start: "2026-08-01"
+window_days: 14
+
+project: concordat-hack
+location: US
+
+banks:
+  alpha: ALP
+  meridian: MER
+  union: UNI
+
+accounts_per_bank: 200000
+benign_rows_per_bank: 3400000
+cross_bank_fraction: 0.10
+
+structuring_accounts_per_bank: 50   # bursts just under 500k NGN
+velocity_accounts_per_bank: 30      # 100+ rapid small txns in an hour
+
+# Golden ring (cross-bank, the demo): victim at alpha, T0 = 2026-08-12 14:02 WAT
+golden_ring:
+  t0: "2026-08-12 13:02:00"   # UTC (14:02 WAT)
+  victim_amount: 2400000.0
+  cashout_accounts: 8          # fan-in must stay above the largest policy k... of aggregates,
+                               # see /synthetic-ledger gotchas
