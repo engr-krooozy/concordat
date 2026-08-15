@@ -6,9 +6,15 @@ BANK=alpha uvicorn services.bank.api.main:app --port 8081
 from __future__ import annotations
 
 import logging
+import os
 
+from a2a.server.request_handlers import DefaultRequestHandler
+from a2a.server.routes import create_jsonrpc_routes
+from a2a.server.tasks import InMemoryTaskStore
 from fastapi import FastAPI, HTTPException, Request, Response
 
+from services.bank.a2a.card import build_card, card_json
+from services.bank.a2a.executor import NegotiationExecutor
 from services.bank.config import load_config
 from services.bank.events import decode_push
 from services.bank.orchestrator import Orchestrator
@@ -18,6 +24,21 @@ log = logging.getLogger("concordat.api")
 cfg = load_config()
 app = FastAPI(title=f"concordat-bank-{cfg.bank}")
 orch = Orchestrator(cfg)
+
+# --- A2A endpoint: how other banks' fleets talk to this one -------------------
+BASE_URL = os.environ.get("SERVICE_URL", f"http://localhost:{os.environ.get('PORT', '8081')}")
+_handler = DefaultRequestHandler(
+    agent_executor=NegotiationExecutor(cfg),
+    task_store=InMemoryTaskStore(),
+    agent_card=build_card(cfg, BASE_URL),
+)
+for route in create_jsonrpc_routes(_handler, rpc_url="/a2a"):
+    app.router.routes.append(route)
+
+
+@app.get("/.well-known/agent-card.json")
+def agent_card() -> dict:
+    return card_json(cfg, BASE_URL)
 
 
 @app.get("/healthz")

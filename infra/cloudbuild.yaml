@@ -23,7 +23,7 @@ steps:
       - --image=${_REPO}/bank:latest
       - --region=${_REGION}
       - --service-account=sa-bank-alpha@concordat-hack.iam.gserviceaccount.com
-      - --set-env-vars=BANK=alpha,GCP_PROJECT=concordat-hack
+      - --set-env-vars=BANK=alpha,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-alpha-fa7ntw3nkq-uc.a.run.app
       - --no-allow-unauthenticated
       - --memory=1Gi
       - --max-instances=3
@@ -38,7 +38,7 @@ steps:
       - --image=${_REPO}/bank:latest
       - --region=${_REGION}
       - --service-account=sa-bank-meridian@concordat-hack.iam.gserviceaccount.com
-      - --set-env-vars=BANK=meridian,GCP_PROJECT=concordat-hack
+      - --set-env-vars=BANK=meridian,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-meridian-fa7ntw3nkq-uc.a.run.app
       - --no-allow-unauthenticated
       - --memory=1Gi
       - --max-instances=3
@@ -53,10 +53,27 @@ steps:
       - --image=${_REPO}/bank:latest
       - --region=${_REGION}
       - --service-account=sa-bank-union@concordat-hack.iam.gserviceaccount.com
-      - --set-env-vars=BANK=union,GCP_PROJECT=concordat-hack
+      - --set-env-vars=BANK=union,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-union-fa7ntw3nkq-uc.a.run.app
       - --no-allow-unauthenticated
       - --memory=1Gi
       - --max-instances=3
+
+  - id: deploy-registry
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - registry
+      - --image=${_REPO}/bank:latest
+      - --region=${_REGION}
+      - --service-account=sa-registry@concordat-hack.iam.gserviceaccount.com
+      - --set-env-vars=GCP_PROJECT=concordat-hack
+      - --command=uvicorn
+      - --args=services.registry.main:app,--host,0.0.0.0,--port,8080
+      - --no-allow-unauthenticated
+      - --memory=512Mi
+      - --max-instances=2
 
 images:
   - ${_REPO}/bank:latest
