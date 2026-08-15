@@ -245,20 +245,30 @@ def write_parquet(tables: dict[str, pa.Table]) -> None:
         print(f"  wrote {dest.name}: {table.num_rows:,} rows")
 
 
-def bq(args: list[str], cfg: dict, quiet: bool = False) -> None:
+def bq(args: list[str], cfg: dict, quiet: bool = False, project: str | None = None) -> None:
     env = {**os.environ, "CLOUDSDK_ACTIVE_CONFIG_NAME": "concordat"}
-    subprocess.run(["bq", f"--project_id={cfg['project']}", *args],
+    subprocess.run(["bq", f"--project_id={project or cfg['project']}", *args],
                    check=not quiet, env=env, capture_output=quiet)
 
 
+def project_for(bank: str, cfg: dict) -> str:
+    """Each bank's ledger lives in that bank's OWN project — that is the perimeter."""
+    return cfg.get("bank_projects", {}).get(bank, cfg["project"])
+
+
 def load(cfg: dict) -> None:
-    datasets = [f"bank_{b}" for b in cfg["banks"]] + ["ground_truth"]
-    for ds in datasets:
-        bq(["mk", f"--location={cfg['location']}", "-d", ds], cfg, quiet=True)  # ignore "exists"
-    for ds in datasets:
-        table = "txns" if ds == "ground_truth" else "transactions"
-        print(f"  loading {ds}.{table} ...")
-        bq(["load", "--replace", "--source_format=PARQUET", f"{ds}.{table}", str(OUT / f"{ds}.parquet")], cfg)
+    for bank in cfg["banks"]:
+        project = project_for(bank, cfg)
+        ds = f"bank_{bank}"
+        bq(["mk", f"--location={cfg['location']}", "-d", ds], cfg, quiet=True, project=project)
+        print(f"  loading {project}:{ds}.transactions ...")
+        bq(["load", "--replace", "--source_format=PARQUET", f"{ds}.transactions",
+            str(OUT / f"{ds}.parquet")], cfg, project=project)
+    # ground truth is the verification key: it stays in the commons and no fleet may read it
+    bq(["mk", f"--location={cfg['location']}", "-d", "ground_truth"], cfg, quiet=True)
+    print("  loading ground_truth.txns ...")
+    bq(["load", "--replace", "--source_format=PARQUET", "ground_truth.txns",
+        str(OUT / "ground_truth.parquet")], cfg)
 
 
 def check(cfg: dict) -> None:

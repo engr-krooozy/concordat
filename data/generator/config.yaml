@@ -3,8 +3,14 @@ seed: 20260831
 window_start: "2026-08-01"
 window_days: 14
 
-project: concordat-hack
+project: concordat-hack   # the commons: holds ground truth and the clean rooms, no ledgers
 location: US
+
+# Each bank's ledger lives in its own GCP project. Sovereignty is a project boundary.
+bank_projects:
+  alpha: concordat-alpha
+  meridian: concordat-meridian
+  union: concordat-union
 
 banks:
   alpha: ALP

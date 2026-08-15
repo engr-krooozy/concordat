@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+from functools import lru_cache
 from pathlib import Path
 
 import google.auth.transport.requests
@@ -16,24 +17,42 @@ import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from google.cloud import firestore
+from google.cloud import firestore, run_v2
 from google.oauth2 import id_token as id_token_mod
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("concordat.ui")
 
 PROJECT = os.environ.get("GCP_PROJECT", "concordat-hack")
-BANK_URLS = {
-    "alpha": os.environ.get("BANK_ALPHA_URL", "https://bank-alpha-fa7ntw3nkq-uc.a.run.app"),
-    "meridian": os.environ.get(
-        "BANK_MERIDIAN_URL", "https://bank-meridian-fa7ntw3nkq-uc.a.run.app"
-    ),
-    "union": os.environ.get("BANK_UNION_URL", "https://bank-union-fa7ntw3nkq-uc.a.run.app"),
-}
+BANKS = ("alpha", "meridian", "union")
 STATIC = Path(__file__).parent / "static"
 
 app = FastAPI(title="concordat-mission-control")
-db = firestore.Client(project=PROJECT)
+
+
+def bank_project(bank: str) -> str:
+    return os.environ.get(f"{bank.upper()}_PROJECT", f"concordat-{bank}")
+
+
+# One Firestore per bank, because each bank keeps its own case state in its own project.
+# Mission control is an observatory: every bank grants it read access to case metadata, and
+# none of them grants it anything else. There is no single database behind this view.
+_stores = {b: firestore.Client(project=bank_project(b)) for b in BANKS}
+
+
+@lru_cache(maxsize=1)
+def _bank_urls() -> dict[str, str]:
+    """Resolve each fleet's Cloud Run URL in its own project, once."""
+    urls = {}
+    for bank in BANKS:
+        override = os.environ.get(f"BANK_{bank.upper()}_URL")
+        if override:
+            urls[bank] = override
+            continue
+        service = run_v2.ServicesClient()
+        name = f"projects/{bank_project(bank)}/locations/us-central1/services/bank-{bank}"
+        urls[bank] = service.get_service(name=name).uri
+    return urls
 
 
 @app.get("/healthz")
@@ -44,7 +63,7 @@ def healthz() -> dict:
 @app.get("/api/cases")
 def list_cases(limit: int = 20) -> list[dict]:
     """Recent cases across all fleets, newest first."""
-    docs = [d.to_dict() for d in db.collection("cases").stream()]
+    docs = [d.to_dict() for store in _stores.values() for d in store.collection("cases").stream()]
     docs.sort(key=lambda c: c.get("opened_at", ""), reverse=True)
     return [
         {
@@ -61,18 +80,19 @@ def list_cases(limit: int = 20) -> list[dict]:
 
 @app.get("/api/cases/{case_id}")
 def get_case(case_id: str) -> dict:
-    snap = db.collection("cases").document(case_id).get()
-    if not snap.exists:
-        raise HTTPException(status_code=404, detail="case not found")
-    return snap.to_dict()
+    for store in _stores.values():
+        snap = store.collection("cases").document(case_id).get()
+        if snap.exists:
+            return snap.to_dict()
+    raise HTTPException(status_code=404, detail="case not found")
 
 
 @app.get("/api/negotiations/{case_id}")
 def peer_transcripts(case_id: str) -> list[dict]:
     """The other side of the conversation: what each peer's policy engine recorded."""
     out = []
-    for bank in BANK_URLS:
-        snap = db.collection("negotiations").document(f"{bank}:{case_id}").get()
+    for bank, store in _stores.items():
+        snap = store.collection("negotiations").document(f"{bank}:{case_id}").get()
         if snap.exists:
             out.append(snap.to_dict())
     return out
@@ -81,11 +101,9 @@ def peer_transcripts(case_id: str) -> list[dict]:
 @app.post("/api/cases/{case_id}/approve")
 def approve(case_id: str, approver: str = "analyst@mission-control") -> dict:
     """The human gate. Proxied to the owning fleet with this service's identity."""
-    snap = db.collection("cases").document(case_id).get()
-    if not snap.exists:
-        raise HTTPException(status_code=404, detail="case not found")
-    bank = snap.to_dict()["bank"]
-    url = BANK_URLS[bank]
+    case = get_case(case_id)
+    bank = case["bank"]
+    url = _bank_urls()[bank]
     token = id_token_mod.fetch_id_token(google.auth.transport.requests.Request(), url)
     resp = httpx.post(
         f"{url}/cases/{case_id}/approve",

@@ -32,7 +32,7 @@ def bank_credentials(cfg: BankConfig):
 
 
 def room_runner_credentials(cfg: BankConfig):
-    """The neutral clean-room identity. Deliberately separate from every bank: it can create
-    and drop rooms but holds no standing access to anyone's dataset.
+    """The neutral clean-room identity, which lives in the COMMONS project — not inside any
+    bank. It can create and drop rooms but holds no standing access to anyone's dataset.
     """
-    return _cached(f"sa-cleanroom@{cfg.project}.iam.gserviceaccount.com", True)
+    return _cached(cfg.room_runner, True)

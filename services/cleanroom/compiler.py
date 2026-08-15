@@ -208,7 +208,8 @@ def contribute_hop(
     GROUP BY dst_bank, cashout_cluster
     ORDER BY total_ngn DESC
     """
-    agg_table = f"{cfg.project}.{room_dataset.split('.')[-1]}.contribution_{cfg.bank}"
+    # the aggregate lands in the commons room; the view it came from never leaves us
+    agg_table = f"{cfg.commons}.{room_dataset.split('.')[-1]}.contribution_{cfg.bank}"
     rows = list(
         client.query(
             agg_sql,

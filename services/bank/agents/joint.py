@@ -28,15 +28,20 @@ log = logging.getLogger("concordat.joint")
 MAX_HOPS = 4
 
 
-def _grant_writers(project: str, room_id: str, credentials) -> None:
+def _grant_writers(commons: str, room_id: str, credentials) -> None:
+    """Let each bank write its own k-thresholded aggregate into the room. The banks live in
+    other projects entirely, so these are cross-project grants — narrow, and only for the
+    lifetime of this room."""
     from google.cloud import bigquery
 
-    client = bigquery.Client(project=project, credentials=credentials)
+    from services.bank.config import BANK_PREFIXES, project_for
+
+    client = bigquery.Client(project=commons, credentials=credentials)
     ds = client.get_dataset(room_id)
     entries = list(ds.access_entries)
-    for bank in ("alpha", "meridian", "union"):
+    for bank in BANK_PREFIXES:
         entry = bigquery.AccessEntry(
-            "WRITER", "userByEmail", f"sa-bank-{bank}@{project}.iam.gserviceaccount.com"
+            "WRITER", "userByEmail", f"sa-bank-{bank}@{project_for(bank)}.iam.gserviceaccount.com"
         )
         if entry not in entries:
             entries.append(entry)
@@ -50,8 +55,9 @@ async def run_joint_analysis(cfg: BankConfig, case: CaseState, diplomat: Diploma
     digest = signed.terms_digest()
     creds = room_runner_credentials(cfg)
 
-    room_id = create_room(cfg.project, digest, signed.ttl_hours, creds)
-    _grant_writers(cfg.project, room_id, creds)
+    # the room is neutral ground: it belongs to the commons, not to the initiator
+    room_id = create_room(cfg.commons, digest, signed.ttl_hours, creds)
+    _grant_writers(cfg.commons, room_id, creds)
     room_ds = room_id.split(".")[-1]
     case.transition(
         Status.ROOM_ACTIVE,
@@ -91,7 +97,7 @@ async def run_joint_analysis(cfg: BankConfig, case: CaseState, diplomat: Diploma
             window_start=window[0],
             window_end=window[1],
             room_dataset=room_ds,
-            room_runner=f"sa-cleanroom@{cfg.project}.iam.gserviceaccount.com",
+            room_runner=cfg.room_runner,
             probe_hashes=probe,
         )
         case.negotiation_transcript.append(
@@ -160,7 +166,7 @@ async def run_joint_analysis(cfg: BankConfig, case: CaseState, diplomat: Diploma
             peers[c.bank],
             protocol.RevokeContribution(case_ref=case.case_id, terms_digest=digest),
         )
-    dissolve_room(cfg.project, digest, creds)
+    dissolve_room(cfg.commons, digest, creds)
     case.log(f"{cfg.bank}/cleanroom", "room_dissolved", f"digest={digest}")
 
     case.transition(

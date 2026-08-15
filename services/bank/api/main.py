@@ -37,8 +37,17 @@ for route in create_jsonrpc_routes(_handler, rpc_url="/a2a"):
 
 
 @app.get("/.well-known/agent-card.json")
-def agent_card() -> dict:
-    return card_json(cfg, BASE_URL)
+def agent_card(request: Request) -> dict:
+    """Advertise the URL peers actually reached us on.
+
+    Each fleet now lives in its own GCP project with its own Cloud Run hostname, so a
+    configured base URL would be one more thing to keep in sync across three deployments.
+    The request already knows the answer.
+    """
+    base = str(request.base_url).rstrip("/")
+    if base.startswith("http://") and "localhost" not in base:
+        base = "https://" + base[len("http://") :]  # Cloud Run terminates TLS at the edge
+    return card_json(cfg, base)
 
 
 @app.get("/healthz")

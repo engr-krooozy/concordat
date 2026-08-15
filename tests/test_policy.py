@@ -1,18 +1,13 @@
 import os
 
 from services.bank.a2a.protocol import InvestigationRequest, JointComputation
-from services.bank.config import BANK_PREFIXES, BankConfig
+from services.bank.config import BankConfig, make_config
 from services.bank.policy.engine import counter_terms, evaluate, load_policy
 
 
 def cfg_for(bank: str) -> BankConfig:
-    return BankConfig(
-        bank=bank,
-        prefix=BANK_PREFIXES[bank],
-        dataset=f"bank_{bank}",
-        service_account=f"sa-bank-{bank}@x.iam.gserviceaccount.com",
-        impersonate_locally=False,
-    )
+    """Same construction the services use, so tests exercise the real project wiring."""
+    return make_config(bank, impersonate_locally=False)
 
 
 def request(k: int = 10, ttl: int = 72, comp: str = "path_join", n_hashes: int = 2):

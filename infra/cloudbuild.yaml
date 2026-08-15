@@ -1,5 +1,7 @@
-# Build the bank image once, deploy it three times (alpha/meridian/union).
-# gcloud builds submit --config infra/cloudbuild.yaml
+# Build the bank image once in the commons, then deploy it into each bank's OWN project.
+# The commons keeps only neutral services: the registry, mission control, and clean rooms.
+#
+#   gcloud builds submit --config infra/cloudbuild.yaml --project=concordat-hack
 substitutions:
   _REGION: us-central1
   _REPO: us-central1-docker.pkg.dev/concordat-hack/concordat
@@ -13,6 +15,15 @@ steps:
     name: gcr.io/cloud-builders/docker
     args: ["push", "${_REPO}/bank:latest"]
 
+  - id: build-ui
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_REPO}/ui:latest", "-f", "services/ui/Dockerfile", "."]
+
+  - id: push-ui
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "${_REPO}/ui:latest"]
+
+  # --- each fleet lands in its own project, under its own service account ---
   - id: deploy-alpha
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
@@ -20,10 +31,11 @@ steps:
       - run
       - deploy
       - bank-alpha
+      - --project=concordat-alpha
       - --image=${_REPO}/bank:latest
       - --region=${_REGION}
-      - --service-account=sa-bank-alpha@concordat-hack.iam.gserviceaccount.com
-      - --set-env-vars=BANK=alpha,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-alpha-fa7ntw3nkq-uc.a.run.app
+      - --service-account=sa-bank-alpha@concordat-alpha.iam.gserviceaccount.com
+      - --set-env-vars=BANK=alpha,COMMONS_PROJECT=concordat-hack
       - --no-allow-unauthenticated
       - --memory=8Gi
       - --cpu=4
@@ -37,10 +49,11 @@ steps:
       - run
       - deploy
       - bank-meridian
+      - --project=concordat-meridian
       - --image=${_REPO}/bank:latest
       - --region=${_REGION}
-      - --service-account=sa-bank-meridian@concordat-hack.iam.gserviceaccount.com
-      - --set-env-vars=BANK=meridian,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-meridian-fa7ntw3nkq-uc.a.run.app
+      - --service-account=sa-bank-meridian@concordat-meridian.iam.gserviceaccount.com
+      - --set-env-vars=BANK=meridian,COMMONS_PROJECT=concordat-hack
       - --no-allow-unauthenticated
       - --memory=8Gi
       - --cpu=4
@@ -54,39 +67,18 @@ steps:
       - run
       - deploy
       - bank-union
+      - --project=concordat-union
       - --image=${_REPO}/bank:latest
       - --region=${_REGION}
-      - --service-account=sa-bank-union@concordat-hack.iam.gserviceaccount.com
-      - --set-env-vars=BANK=union,GCP_PROJECT=concordat-hack,SERVICE_URL=https://bank-union-fa7ntw3nkq-uc.a.run.app
+      - --service-account=sa-bank-union@concordat-union.iam.gserviceaccount.com
+      - --set-env-vars=BANK=union,COMMONS_PROJECT=concordat-hack
       - --no-allow-unauthenticated
       - --memory=8Gi
       - --cpu=4
       - --timeout=900
       - --max-instances=3
 
-  - id: build-ui
-    name: gcr.io/cloud-builders/docker
-    args: ["build", "-t", "${_REPO}/ui:latest", "-f", "services/ui/Dockerfile", "."]
-
-  - id: push-ui
-    name: gcr.io/cloud-builders/docker
-    args: ["push", "${_REPO}/ui:latest"]
-
-  - id: deploy-ui
-    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
-    entrypoint: gcloud
-    args:
-      - run
-      - deploy
-      - mission-control
-      - --image=${_REPO}/ui:latest
-      - --region=${_REGION}
-      - --service-account=sa-mission-ui@concordat-hack.iam.gserviceaccount.com
-      - --set-env-vars=GCP_PROJECT=concordat-hack
-      - --allow-unauthenticated
-      - --memory=512Mi
-      - --max-instances=3
-
+  # --- neutral ground stays in the commons ---
   - id: deploy-registry
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
@@ -94,6 +86,7 @@ steps:
       - run
       - deploy
       - registry
+      - --project=concordat-hack
       - --image=${_REPO}/bank:latest
       - --region=${_REGION}
       - --service-account=sa-registry@concordat-hack.iam.gserviceaccount.com
@@ -103,6 +96,22 @@ steps:
       - --no-allow-unauthenticated
       - --memory=512Mi
       - --max-instances=2
+
+  - id: deploy-ui
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - mission-control
+      - --project=concordat-hack
+      - --image=${_REPO}/ui:latest
+      - --region=${_REGION}
+      - --service-account=sa-mission-ui@concordat-hack.iam.gserviceaccount.com
+      - --set-env-vars=GCP_PROJECT=concordat-hack
+      - --allow-unauthenticated
+      - --memory=512Mi
+      - --max-instances=3
 
 images:
   - ${_REPO}/bank:latest
