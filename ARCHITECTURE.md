@@ -62,8 +62,11 @@ flowchart TB
 
 ## The six invariants (put these on the diagram slide — they ARE the architecture)
 
-1. **Sovereignty**: a bank's SA can read only its own dataset. Cross-perimeter access exists
-   *only* through the clean room compiled from an accepted concordat. Enforced by IAM, not code.
+1. **Sovereignty**: each bank is a **separate GCP project** with its own ledger, identity,
+   topic and case store. A bank's service account does not appear in any peer's project at
+   all, so a cross-perimeter read fails with a 403 from Google rather than a check in our
+   code. The only route between banks is a clean room compiled from an accepted concordat.
+   Reproduce with `scripts/verify_sovereignty.py`.
 2. **Deterministic veto**: Gemini drafts proposals and reports; the YAML policy evaluator (plain
    code) has final say on anything crossing the boundary. LLMs propose, policy disposes.
 3. **Perimeter gate**: every outbound free-text field passes deterministic redaction rules and

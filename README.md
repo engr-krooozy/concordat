@@ -47,22 +47,24 @@ privacy policies.
 
 ## Try it
 
-Prerequisites: `gcloud` authenticated, Python 3.12, a GCP project with billing.
+Prerequisites: `gcloud` authenticated, Python 3.12, and four GCP projects with billing —
+one commons plus one per bank. The project boundary *is* the security model.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e .   # or: uv venv && uv pip install -e .
 make test                                             # 32 tests, no cloud needed
 
-# one-time cloud setup (creates datasets, service accounts, IAM, topics, identities)
-bash infra/setup_data.sh
-bash infra/setup_async.sh
-bash infra/setup_deploy.sh
-bash infra/setup_cleanroom.sh
-bash infra/setup_ui.sh
+# commons: neutral ground only (registry, mission control, clean rooms)
+bash infra/setup_deploy.sh          # artifact registry + build permissions
+bash infra/setup_cleanroom.sh       # the neutral room-runner identity
+bash infra/setup_ui.sh              # the observatory identity
 
-make seed        # generate 11.2M synthetic rows with a planted cross-bank ring, load to BQ
-make deploy      # build once, deploy 3 bank fleets + registry + mission control
-bash infra/setup_deploy.sh --push        # wire Pub/Sub push subscriptions
+# one sovereign perimeter per bank, each in its OWN project
+for bank in alpha meridian union; do bash infra/federate.sh $bank; done
+
+make seed        # 11.2M synthetic rows; each ledger loads into its own project
+make deploy      # one image -> three projects, plus registry and mission control
+bash infra/setup_deploy.sh --push               # Pub/Sub push subscriptions per project
 bash infra/setup_a2a.sh --invokers --register   # peer IAM + publish agent cards
 make demo        # run the golden path end to end and print the case as it unfolds
 ```
@@ -70,16 +72,40 @@ make demo        # run the golden path end to end and print the case as it unfol
 Two more things worth running:
 
 ```bash
-.venv/bin/python -m scripts.demo_rejection    # ask a peer for too much; watch it refuse
+.venv/bin/python -m scripts.verify_sovereignty  # prove the perimeters, incl. the 403s
+.venv/bin/python -m scripts.demo_rejection      # ask a peer for too much; watch it refuse
 .venv/bin/python -m scripts.eval_gemma_gate models/gemma-3-4b-it-Q4_K_M.gguf
 ```
 
 All data is synthetic and generated locally from a fixed seed (`data/generator/`). No real
 transaction data exists anywhere in this project.
 
+## The perimeters are real
+
+Each bank is a **separate GCP project** — `concordat-alpha`, `concordat-meridian`,
+`concordat-union` — with its own ledger, service account, event topic and case store. The
+commons project holds only neutral ground: the agent-card registry, mission control, and the
+clean rooms. It holds no bank's ledger.
+
+```
+$ .venv/bin/python -m scripts.verify_sovereignty
+
+   concordat-alpha      sa-bank-alpha@concordat-alpha  +  sa-cleanroom@concordat-hack
+   concordat-meridian   sa-bank-meridian@...           +  sa-cleanroom@concordat-hack
+   concordat-union      sa-bank-union@...              +  sa-cleanroom@concordat-hack
+   No bank appears in another bank's project.
+
+   sa-bank-alpha -> its own ledger    : 3,743,998 rows
+   sa-bank-alpha -> meridian's ledger : refused — 403 Access Denied (concordat-meridian)
+   sa-bank-alpha -> union's ledger    : refused — 403 Access Denied (concordat-union)
+```
+
+In one project you can only show that you *chose* not to grant access. Across projects, the
+access does not exist to grant.
+
 ## How the privacy guarantee is enforced
 
-Not by our code, which is the point:
+Not by our code either, which is the point:
 
 ```
 $ SELECT account_hash FROM bank_meridian.contribution_<digest> LIMIT 5
