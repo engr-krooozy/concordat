@@ -254,7 +254,9 @@ def load(cfg: dict) -> None:
 def check(cfg: dict) -> None:
     for sql_file in sorted((ROOT / "checks").glob("*.sql")):
         print(f"\n=== {sql_file.name} ===")
-        bq(["query", "--use_legacy_sql=false", sql_file.read_text()], cfg)
+        # bq CLI would parse a leading "--" SQL comment as a flag; strip comment lines
+        sql = "\n".join(l for l in sql_file.read_text().splitlines() if not l.lstrip().startswith("--"))
+        bq(["query", "--use_legacy_sql=false", sql], cfg)
 
 
 def main() -> None:
