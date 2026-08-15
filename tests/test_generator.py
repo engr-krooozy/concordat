@@ -17,16 +17,18 @@ def test_golden_ring_crosses_boundaries_and_mirrors():
     alpha = tables["alpha"].to_pydict()
     meridian = tables["meridian"].to_pydict()
     union = tables["union"].to_pydict()
+    width = small()["golden_ring"]["layer_width"]
     # boundary txn appears in BOTH ledgers (each bank sees its side of the wire)
-    assert "ALP-G3" in alpha["txn_id"] and "ALP-G3" in meridian["txn_id"]
+    assert "ALP-G4-0" in alpha["txn_id"] and "ALP-G4-0" in meridian["txn_id"]
     # solo alpha trace dead-ends: the boundary rows leave alpha
-    i = alpha["txn_id"].index("ALP-G3")
+    i = alpha["txn_id"].index("ALP-G4-0")
     assert alpha["dst_bank"][i] == "meridian"
-    # cash-out fan-in cluster present in union with shared ATM narration
+    # every layer is wider than the strictest policy k (25) or the clean room hides the ring
+    assert width > 25
     atm = [
         n for c, n in zip(union["channel"], union["narration"]) if c == "atm" and n == "ATM-LAG-014"
     ]
-    assert len(atm) == 8
+    assert len(atm) == width
 
 
 def test_deterministic():

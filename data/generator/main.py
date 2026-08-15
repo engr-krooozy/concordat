@@ -149,9 +149,15 @@ def gen_velocity(rng, bank, prefix, accts, cfg, ledgers: Ledgers) -> None:
 
 
 def gen_golden_ring(cfg, ledgers: Ledgers) -> None:
-    """Victim at alpha -> mules in alpha -> boundary -> meridian -> boundary -> union cash-out fan-in."""
+    """Layered cross-bank mule network: victim -> 2 alpha splitters -> W alpha mules ->
+    boundary -> W meridian mules -> boundary -> W union accounts -> one ATM cash-out cluster.
+
+    Each layer is W accounts wide so every bank's k-thresholded clean-room contribution
+    survives the strictest policy floor (see config comment).
+    """
     t0 = datetime.fromisoformat(cfg["golden_ring"]["t0"])
     amt = cfg["golden_ring"]["victim_amount"]
+    w = cfg["golden_ring"]["layer_width"]
 
     def at(minutes: float) -> datetime:
         return t0 + timedelta(minutes=minutes)
@@ -163,23 +169,27 @@ def gen_golden_ring(cfg, ledgers: Ledgers) -> None:
                     pattern=g, note="alpha hop split 1")
     ledgers.add_txn("ALP-G2", at(9), "ALP-9000002", "ALP-9000004", "alpha", "alpha", amt * 0.497,
                     pattern=g, note="alpha hop split 2")
-    ledgers.add_txn("ALP-G3", at(25), "ALP-9000003", "MER-9000101", "alpha", "meridian", amt * 0.492,
-                    pattern=g, note="boundary alpha->meridian")
-    ledgers.add_txn("ALP-G4", at(31), "ALP-9000004", "MER-9000102", "alpha", "meridian", amt * 0.492,
-                    pattern=g, note="boundary alpha->meridian")
-    ledgers.add_txn("MER-G5", at(50), "MER-9000101", "MER-9000103", "meridian", "meridian", amt * 0.487,
-                    pattern=g, note="meridian hop")
-    ledgers.add_txn("MER-G6", at(55), "MER-9000102", "MER-9000104", "meridian", "meridian", amt * 0.487,
-                    pattern=g, note="meridian hop")
-    n_cash = cfg["golden_ring"]["cashout_accounts"]
-    per = amt * 0.96 / n_cash
-    for i in range(n_cash):
-        src = "MER-9000103" if i < n_cash // 2 else "MER-9000104"
-        ledgers.add_txn(f"MER-G7-{i}", at(80 + i * 1.5), src, f"UNI-90002{i:02d}", "meridian", "union",
-                        round(per, 2), pattern=g, note="boundary meridian->union fan-out")
-    for i in range(n_cash):
-        ledgers.add_txn(f"UNI-G8-{i}", at(130 + i * 4), f"UNI-90002{i:02d}", "CASH", "union", "external",
-                        round(per * 0.99, 2), channel="atm", narration="ATM-LAG-014",
+
+    per = amt * 0.98 / w
+    # layer 1: two splitters fan out to W alpha mules
+    for i in range(w):
+        src = "ALP-9000003" if i < w // 2 else "ALP-9000004"
+        ledgers.add_txn(f"ALP-G3-{i}", at(20 + i * 0.5), src, f"ALP-91{i:04d}", "alpha", "alpha",
+                        round(per, 2), pattern=g, note="alpha mule layer")
+    # boundary crossing 1: every alpha mule wires to its own meridian mule
+    for i in range(w):
+        ledgers.add_txn(f"ALP-G4-{i}", at(40 + i * 0.5), f"ALP-91{i:04d}", f"MER-92{i:04d}",
+                        "alpha", "meridian", round(per * 0.995, 2),
+                        pattern=g, note="boundary alpha->meridian")
+    # boundary crossing 2: meridian mules push onward to union
+    for i in range(w):
+        ledgers.add_txn(f"MER-G5-{i}", at(70 + i * 0.5), f"MER-92{i:04d}", f"UNI-93{i:04d}",
+                        "meridian", "union", round(per * 0.99, 2),
+                        pattern=g, note="boundary meridian->union")
+    # cash-out: the whole layer concentrates at one ATM cluster
+    for i in range(w):
+        ledgers.add_txn(f"UNI-G6-{i}", at(110 + i * 2), f"UNI-93{i:04d}", "CASH", "union", "external",
+                        round(per * 0.985, 2), channel="atm", narration="ATM-LAG-014",
                         pattern=g, note="cash-out cluster ATM-LAG-014")
 
 

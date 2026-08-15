@@ -19,8 +19,12 @@ structuring_accounts_per_bank: 50   # bursts just under 500k NGN
 velocity_accounts_per_bank: 30      # 100+ rapid small txns in an hour
 
 # Golden ring (cross-bank, the demo): victim at alpha, T0 = 2026-08-12 14:02 WAT
+#
+# LAYER WIDTH IS A PRIVACY CONSTRAINT, NOT A STYLE CHOICE: every bank's contribution to the
+# clean room is a k-thresholded aggregate, so each layer needs MORE distinct mule accounts
+# than the largest policy k (meridian = 25) or the ring hides from our own investigation.
+# 30 per layer models a realistic large mule network and clears k=25 with margin.
 golden_ring:
   t0: "2026-08-12 13:02:00"   # UTC (14:02 WAT)
   victim_amount: 2400000.0
-  cashout_accounts: 8          # fan-in must stay above the largest policy k... of aggregates,
-                               # see /synthetic-ledger gotchas
+  layer_width: 30             # mule accounts per bank layer (must exceed max policy k)

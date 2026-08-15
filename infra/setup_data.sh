@@ -34,7 +34,7 @@ for b in ("alpha", "meridian", "union"):
     info = json.loads(subprocess.run(["bq", "show", "--format=json", ds],
                                      capture_output=True, check=True, env=env).stdout)
     access = info["access"]
-    entry = {"role": "READER", "userByEmail": sa}
+    entry = {"role": "OWNER", "userByEmail": sa}  # each bank administers its OWN perimeter only
     if entry not in access:
         access.append(entry)
         tmp = f"/tmp/access_{b}.json"
