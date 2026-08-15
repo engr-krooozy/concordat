@@ -50,8 +50,10 @@ trace dies at its boundary, its fleet:
 2. **Negotiates** the terms of a joint investigation — which computations, what aggregation
    thresholds (k-anonymity), hashed identifiers only, TTL — each proposal checked by both sides'
    policy engines against machine-readable data-sharing policies.
-3. **Compiles** the agreed "concordat" into an ephemeral BigQuery clean room (Analytics Hub
-   data clean rooms; authorized-views fallback) and runs the joint money-flow query.
+3. **Compiles** the agreed "concordat" into an ephemeral BigQuery clean room and runs the
+   joint money-flow query. Enforcement is BigQuery's own `aggregation_threshold_policy`, the
+   mechanism data clean rooms are built on: raw `SELECT` against a contribution is refused by
+   the database, not by our code.
 4. **Acts** only inside its own walls — flags/freezes its own accounts — behind human approval
    gates, and files a SAR-style report per bank.
 5. **Dissolves** the room. What persists: the signed concordat document, the audit trail, and
@@ -88,7 +90,7 @@ why "data diplomacy" is a new category.
 | Compute | **Cloud Run** (3 bank services + registry + mission-control UI) | GCP infra |
 | State | **Firestore** (case state, negotiation transcripts, concordat documents, audit log) | GCP infra |
 | Data | **BigQuery** — 3 isolated datasets (~10M synthetic rows total), Analytics Hub clean room | GCP infra, "massive datasets" |
-| Perimeter gate | **Gemma 3 (1B/4B)** served locally per bank (Ollama sidecar or Cloud Run GPU) for PII redaction/classification | Bonus points (up to 0.6) — justified, not bolted on |
+| Perimeter gate | **Gemma 3 4B (Q4, llama.cpp)** baked into each bank's container — deterministic rules redact, Gemma gives a second opinion. Size chosen by measurement: 270M/1B are degenerate (see `scripts/eval_gemma_gate.py`) | Bonus points (up to 0.6) — justified, not bolted on |
 | UI | **Next.js** mission control (three bank panels, negotiation transcript, ring graph via cytoscape/d3) on Cloud Run | Hosted project URL requirement |
 | CI/CD | Cloud Build → Cloud Run | Production-readiness story |
 | Language | Python 3.12 (backend), TypeScript (UI) | — |
@@ -210,7 +212,9 @@ Mapped to judging (40% innovation/utility, 30% architecture, 30% demo/production
 
 1. Solo or team entry? (Affects Individual/Hobbyist eligibility.)
 2. Which GCP account/billing to burn credits on — new project under personal billing?
-3. Analytics Hub Data Clean Rooms: if region/tier friction appears by end of Aug 22, we take the
-   authorized-views fallback (same story, same isolation guarantees) — pre-approved?
+3. ~~Clean rooms vs fallback~~ **Resolved 2026-08-15**: the Analytics Hub *packaging* API
+   (`dataCleanRoomConfig`) is not exposed on v1 or v1beta1 for this project, but BigQuery's
+   native `aggregation_threshold_policy` — what clean rooms use underneath — works and is a
+   stronger claim than the authorized-views fallback. Shipped that.
 4. Final name: Concordat vs Parley (check availability day 1).
 5. Repo host: GitHub private (rules allow private repos with judge access) — confirm.

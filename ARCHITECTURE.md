@@ -12,13 +12,13 @@ from Firestore.
 
 ```mermaid
 flowchart TB
-    subgraph ALPHA["Bank Alpha perimeter (SA: alpha@)"]
+    subgraph ALPHA["Bank Alpha perimeter (SA: alpha@) — deployed 3x, one image"]
         A_or[ADK Orchestrator]
         A_det[Detector agent]
         A_tr[Tracer agent]
         A_dip[Diplomat agent]
         A_pol[Policy engine<br/>deterministic YAML evaluator]
-        A_red[Redactor gate<br/>Gemma 3 local]
+        A_red[Perimeter gate<br/>rules + local Gemma 3 4B]
         A_enf[Enforcer + Reporter]
         A_bq[(BQ: bank_alpha<br/>~3.5M rows)]
         A_det --> A_tr --> A_bq
@@ -36,8 +36,8 @@ flowchart TB
     end
 
     REG[Agent-card Registry<br/>Cloud Run — the agent catalog]
-    CR[Clean-room compiler<br/>concordat → Analytics Hub room<br/>+ joint-query builder + dissolver]
-    ROOM[(Ephemeral BigQuery<br/>clean room<br/>k-thresholded aggregates only)]
+    CR[Clean-room compiler<br/>concordat → room + k-policy views<br/>+ hop chaining + dissolver]
+    ROOM[(Ephemeral room<br/>aggregation_threshold_policy<br/>raw SELECT refused by BigQuery)]
     FS[(Firestore<br/>cases, transcripts,<br/>concordats, audit log)]
     PS{{Pub/Sub<br/>case events}}
     UI[Mission Control UI<br/>Next.js on Cloud Run]
@@ -66,10 +66,13 @@ flowchart TB
    *only* through the clean room compiled from an accepted concordat. Enforced by IAM, not code.
 2. **Deterministic veto**: Gemini drafts proposals and reports; the YAML policy evaluator (plain
    code) has final say on anything crossing the boundary. LLMs propose, policy disposes.
-3. **Perimeter gate**: every outbound A2A payload passes the local Gemma redactor; identifiers
-   leave only as salted hashes. No cloud API ever sees unredacted data.
-4. **Ephemerality**: clean rooms have a TTL from the concordat; the dissolver tears them down and
-   the audit record is the only survivor.
+3. **Perimeter gate**: every outbound free-text field passes deterministic redaction rules and
+   then a Gemma 3 4B running *inside the bank's own container* — the text being checked for
+   leaks never leaves the bank to be checked. Rules are the guarantee; Gemma can only add a
+   restriction. Identifiers leave only as salted hashes, and only in sets of at least k.
+4. **Ephemerality**: rooms carry the concordat's TTL. Dissolution is *cooperative*, not central:
+   the room runner drops the room, and each bank revokes its own contribution view — the runner
+   has no delete rights inside anyone's dataset. The audit record is the only survivor.
 5. **Asynchrony**: no request/response chains across the system — Pub/Sub events + Firestore
    state; any service can die mid-case and the case resumes.
 6. **Auditability**: every negotiation round, policy verdict, clean-room query, and enforcement
@@ -91,7 +94,10 @@ detected → tracing → dead_end → discovering → negotiating ⇄ countering
 | `PolicyVerdict` | responding policy engine | accept / reject with violated-rule references |
 | `CounterProposal` | responder | narrowed computations / raised k / shorter TTL |
 | `ConcordatSigned` | both | final terms; hash of terms doubles as clean-room config key |
-| `RoomDissolved` | compiler | closure record for all parties' audit logs |
+| `ContributionRequest` | initiator | probe set (>= k hashes), room, k, salt, window |
+| `ContributionReceipt` | peer | k-thresholded aggregate only — never rows |
+| `RevokeContribution` | initiator | asks a peer to withdraw its own view |
+| `RoomDissolved` | peer/compiler | closure record for all parties' audit logs |
 
 All messages: Pydantic-validated, transcript-persisted, replayable in the UI.
 
