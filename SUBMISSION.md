@@ -4,10 +4,28 @@ Deadline: **Aug 31, 2026, 5:00 PM PDT = Sep 1, 1:00 AM WAT. Internal stop: Aug 3
 Track entered: **The Fortified Enterprise Fleet**. Also eligible: Individual/Hobbyist (if solo),
 Best Architectural Design, Grand Prize.
 
+## Live deployment (verified 2026-08-15)
+
+| What | URL |
+|---|---|
+| **Hosted project (public)** | https://mission-control-fa7ntw3nkq-uc.a.run.app |
+| Bank Alpha fleet (private) | https://bank-alpha-fa7ntw3nkq-uc.a.run.app |
+| Bank Meridian fleet (private) | https://bank-meridian-fa7ntw3nkq-uc.a.run.app |
+| Bank Union fleet (private) | https://bank-union-fa7ntw3nkq-uc.a.run.app |
+| Agent-card registry (private) | https://registry-fa7ntw3nkq-uc.a.run.app |
+
+Verified anonymously end to end: the dashboard loads, lists real cases, and the approval
+button drives a case from `awaiting_approval` through `enforcing` to `closed` with the
+approver recorded in the audit trail.
+
+**Known limitation to state plainly if asked:** the approval endpoint is unauthenticated so
+judges can exercise the gate. In production it would sit behind the bank's SSO — the gate's
+purpose is to prove a *human* decided, and that property is unchanged. All data is synthetic.
+
 ## Mandatory checklist (from hackathon rules — verify each before submitting)
 
 - [ ] Functional project meeting track criteria
-- [ ] **Hosted project URL** (mission-control UI `.run.app` URL)
+- [x] **Hosted project URL** — https://mission-control-fa7ntw3nkq-uc.a.run.app (public, verified)
 - [ ] Text description: features, tech stack, data sources, learnings
 - [ ] Code repository (private GitHub OK — grant judge access per Devpost instructions)
 - [ ] README.md with **reproducible setup** (dry-run on clean machine Aug 30)
@@ -22,7 +40,7 @@ Best Architectural Design, Grand Prize.
 
 ## Bonus points (up to 0.6)
 
-- [ ] **Gemma** integration (perimeter redaction gate) — call it out explicitly in description + video
+- [x] **Gemma** integration — Gemma 3 4B in-container perimeter gate; model size chosen by a measured eval (`scripts/eval_gemma_gate.py`), which is itself worth a line in the video
 - [ ] Blog post on public platform (dev.to / Medium): "Data diplomacy: teaching rival banks'
       agent fleets to negotiate" — publish Aug 29
 - [ ] Social post with `#AllThingsAgenticHackathon` linking the blog — Aug 29
