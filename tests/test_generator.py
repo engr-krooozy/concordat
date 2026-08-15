@@ -23,7 +23,9 @@ def test_golden_ring_crosses_boundaries_and_mirrors():
     i = alpha["txn_id"].index("ALP-G3")
     assert alpha["dst_bank"][i] == "meridian"
     # cash-out fan-in cluster present in union with shared ATM narration
-    atm = [n for c, n in zip(union["channel"], union["narration"]) if c == "atm" and n == "ATM-LAG-014"]
+    atm = [
+        n for c, n in zip(union["channel"], union["narration"]) if c == "atm" and n == "ATM-LAG-014"
+    ]
     assert len(atm) == 8
 
 
