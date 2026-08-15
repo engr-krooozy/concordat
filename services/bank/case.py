@@ -66,6 +66,7 @@ class CaseState(BaseModel):
     boundary_edges: list[BoundaryEdge] = []
     audit: list[AuditEntry] = []
     summary: str = ""
+    report: str = ""  # SAR-style case file drafted by the reporter agent
 
     def log(self, actor: str, action: str, detail: str = "") -> None:
         self.audit.append(
