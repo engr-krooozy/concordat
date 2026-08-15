@@ -64,6 +64,29 @@ steps:
       - --timeout=900
       - --max-instances=3
 
+  - id: build-ui
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_REPO}/ui:latest", "-f", "services/ui/Dockerfile", "."]
+
+  - id: push-ui
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "${_REPO}/ui:latest"]
+
+  - id: deploy-ui
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - mission-control
+      - --image=${_REPO}/ui:latest
+      - --region=${_REGION}
+      - --service-account=sa-mission-ui@concordat-hack.iam.gserviceaccount.com
+      - --set-env-vars=GCP_PROJECT=concordat-hack
+      - --allow-unauthenticated
+      - --memory=512Mi
+      - --max-instances=3
+
   - id: deploy-registry
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
     entrypoint: gcloud
@@ -83,6 +106,7 @@ steps:
 
 images:
   - ${_REPO}/bank:latest
+  - ${_REPO}/ui:latest
 
 options:
   logging: CLOUD_LOGGING_ONLY

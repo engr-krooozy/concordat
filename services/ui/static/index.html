@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Concordat — Mission Control</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🤝</text></svg>" />
+<style>
+  :root {
+    --bg: #0c0f16; --panel: #141926; --line: #232a3d; --ink: #e8ecf5; --dim: #8b96ad;
+    --accent: #6ea8ff; --ok: #3ecf8e; --warn: #f6c453; --bad: #ff6b6b; --gold: #ffd479;
+    --alpha: #6ea8ff; --meridian: #b98bff; --union: #3ecf8e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+  .tag { color: var(--dim); font-size: 13px; }
+  .wrap { padding: 20px 24px; max-width: 1500px; margin: 0 auto; }
+  .banks { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .bank { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 16px; min-height: 190px; }
+  .bank h2 { font-size: 14px; margin: 0 0 4px; display: flex; align-items: center; gap: 8px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .b-alpha .dot { background: var(--alpha); } .b-meridian .dot { background: var(--meridian); }
+  .b-union .dot { background: var(--union); }
+  .status { font-size: 12px; color: var(--dim); margin-bottom: 10px; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px;
+    border: 1px solid var(--line); background: #1b2233; color: var(--dim); }
+  .pill.live { color: var(--gold); border-color: #4a4020; background: #241f10; }
+  .pill.done { color: var(--ok); border-color: #1d4736; background: #10241b; }
+  .pill.stop { color: var(--bad); border-color: #4a2020; background: #241010; }
+  .metric { font-size: 26px; font-weight: 600; letter-spacing: -.5px; }
+  .metric small { font-size: 12px; font-weight: 400; color: var(--dim); display: block; }
+  section { margin-top: 22px; }
+  h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--dim);
+    margin: 0 0 10px; }
+  .grid2 { display: grid; grid-template-columns: 1.15fr .85fr; gap: 16px; }
+  @media (max-width: 1000px) { .grid2 { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .feed { max-height: 340px; overflow-y: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px; }
+  .row { padding: 4px 0; border-bottom: 1px solid #1a2032; display: flex; gap: 10px; }
+  .row:last-child { border-bottom: 0; }
+  .who { color: var(--accent); min-width: 150px; }
+  .what { color: var(--dim); min-width: 190px; }
+  .msg { display: flex; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid #1a2032; }
+  .dirn { font-size: 11px; color: var(--dim); min-width: 62px; }
+  .kind { font-size: 12px; }
+  .kind.accept { color: var(--ok); } .kind.counter { color: var(--warn); }
+  .kind.reject { color: var(--bad); } .kind.signed { color: var(--gold); }
+  .terms { color: var(--dim); font-size: 11px; font-family: ui-monospace, monospace; }
+  .finding { border-color: #4a4020; background: linear-gradient(180deg, #241f10, var(--panel)); }
+  .finding .metric { color: var(--gold); }
+  button { background: var(--gold); color: #241a00; border: 0; border-radius: 7px;
+    padding: 9px 16px; font-weight: 600; cursor: pointer; font-size: 13px; }
+  button:disabled { background: #2a3145; color: var(--dim); cursor: default; }
+  .muted { color: var(--dim); }
+  svg text { font-family: ui-sans-serif, sans-serif; }
+  .caselist { display: flex; gap: 8px; flex-wrap: wrap; }
+  .caselist button { background: #1b2233; color: var(--dim); font-weight: 400;
+    border: 1px solid var(--line); font-family: ui-monospace, monospace; font-size: 11px; }
+  .caselist button.sel { background: #24304a; color: var(--ink); border-color: var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Concordat</h1>
+  <span class="tag">rival banks' agent fleets negotiating a joint investigation — no raw data ever crosses a perimeter</span>
+</header>
+
+<div class="wrap">
+  <section>
+    <h3>Cases</h3>
+    <div class="caselist" id="caselist"><span class="muted">loading…</span></div>
+  </section>
+
+  <section class="banks" id="banks"></section>
+
+  <section class="grid2">
+    <div class="card">
+      <h3>Negotiation transcript</h3>
+      <div id="transcript" class="feed"><span class="muted">no case selected</span></div>
+    </div>
+    <div class="card" id="findingcard">
+      <h3>Joint finding</h3>
+      <div id="finding"><span class="muted">the room has not reported yet</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h3>Money flow across perimeters</h3>
+    <svg id="graph" viewBox="0 0 900 220" width="100%" height="220"></svg>
+  </section>
+
+  <section class="card">
+    <h3>Audit trail</h3>
+    <div id="audit" class="feed"><span class="muted">no case selected</span></div>
+  </section>
+</div>
+
+<script>
+const BANKS = ["alpha", "meridian", "union"];
+let selected = null, lastStatus = null;
+
+const esc = (s) => String(s ?? "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]));
+const money = (n) => n == null ? "—" : Number(n).toLocaleString("en-NG", { maximumFractionDigits: 0 });
+
+function pillClass(status) {
+  if (["closed"].includes(status)) return "done";
+  if (["rejected"].includes(status)) return "stop";
+  return "live";
+}
+
+async function refreshCases() {
+  const cases = await (await fetch("/api/cases")).json();
+  const el = document.getElementById("caselist");
+  if (!cases.length) { el.innerHTML = '<span class="muted">no cases yet — run <code>make demo</code></span>'; return; }
+  if (!selected) selected = cases[0].case_id;
+  el.innerHTML = cases.map(c =>
+    `<button class="${c.case_id === selected ? "sel" : ""}" onclick="selectCase('${c.case_id}')">
+       ${esc(c.case_id)} · ${esc(c.status)}</button>`).join("");
+}
+
+function selectCase(id) { selected = id; lastStatus = null; refreshCase(); refreshCases(); }
+
+function renderBanks(c) {
+  const finding = c.finding || {};
+  const hops = Object.fromEntries((finding.hops || []).map(h => [h.bank, h]));
+  document.getElementById("banks").innerHTML = BANKS.map(b => {
+    const isOwner = c.bank === b;
+    const hop = hops[b];
+    const status = isOwner ? c.status : (hop ? "contributed" : (c.concordat ? "signed" : "—"));
+    const accounts = isOwner ? (c.boundary_edges || []).length : (hop ? hop.accounts : null);
+    const label = isOwner ? "accounts at our boundary" : "accounts disclosed (k-thresholded)";
+    return `<div class="bank b-${b}">
+      <h2><span class="dot"></span>Bank ${b}${isOwner ? " · initiator" : ""}</h2>
+      <div class="status"><span class="pill ${pillClass(status)}">${esc(status)}</span></div>
+      <div class="metric">${accounts ?? "—"}<small>${label}</small></div>
+      ${hop ? `<div class="metric" style="font-size:16px;margin-top:8px">₦${money(hop.total_ngn)}<small>value observed at this hop</small></div>` : ""}
+      ${isOwner && c.enforcement?.length ? `<div class="metric" style="font-size:16px;margin-top:8px">${c.enforcement.length}<small>actions inside own perimeter</small></div>` : ""}
+    </div>`;
+  }).join("");
+}
+
+function renderTranscript(c) {
+  const t = c.negotiation_transcript || [];
+  if (!t.length) { document.getElementById("transcript").innerHTML = '<span class="muted">no messages yet</span>'; return; }
+  document.getElementById("transcript").innerHTML = t.map(x => {
+    const m = x.message, k = m.kind;
+    let cls = "", terms = "";
+    if (k === "policy_verdict") { cls = m.verdict === "accept" ? "accept" : "reject";
+      terms = m.verdict + (m.violated_rules?.length ? " · " + m.violated_rules.join(", ") : ""); }
+    if (k === "counter_proposal") { cls = "counter"; terms = `k=${m.k_threshold} ttl=${m.ttl_hours}h`; }
+    if (k === "investigation_request") terms = `round ${m.round} · k=${m.k_threshold} ttl=${m.ttl_hours}h`;
+    if (k === "concordat_signed") { cls = "signed"; terms = `k=${m.k_threshold} · ${(m.parties||[]).join(", ")}`; }
+    if (k === "contribution_receipt") terms = `${m.accounts} accounts · ₦${money(m.total_ngn)}${m.cashout_cluster ? " · " + m.cashout_cluster : ""}`;
+    if (k === "contribution_request") terms = `probe ${m.probe_hashes}`;
+    return `<div class="msg"><span class="dirn">${x.direction === "sent" ? "→ " : "← "}${esc(x.peer)}</span>
+      <span class="kind ${cls}">${esc(k)}</span><span class="terms">${esc(terms)}</span></div>`;
+  }).join("");
+}
+
+function renderFinding(c) {
+  const el = document.getElementById("finding");
+  const card = document.getElementById("findingcard");
+  const f = c.finding;
+  if (!f) { card.classList.remove("finding");
+    el.innerHTML = `<span class="muted">${c.status === "rejected" ? "negotiation ended without agreement — nothing was shared" : "the room has not reported yet"}</span>`;
+    return; }
+  card.classList.add("finding");
+  const chain = (f.banks_involved || []).join(" → ");
+  el.innerHTML = `<div class="metric">${f.mule_accounts}<small>mule accounts across ${esc(chain)}</small></div>
+    <div class="metric" style="margin-top:10px">₦${money(f.total_ngn)}<small>concentrated at ${esc(f.cashout_cluster)}</small></div>
+    <div style="margin-top:14px">${
+      c.status === "awaiting_approval"
+        ? `<button onclick="approve()">Approve enforcement</button>
+           <div class="muted" style="margin-top:6px;font-size:12px">agents cannot act until a human clicks</div>`
+        : `<span class="muted">${c.status === "closed" ? "approved · enforcement complete" : "awaiting the room"}</span>`}</div>`;
+}
+
+function renderGraph(c) {
+  const f = c.finding, signed = !!c.concordat;
+  const cols = { alpha: "#6ea8ff", meridian: "#b98bff", union: "#3ecf8e" };
+  const hops = Object.fromEntries((f?.hops || []).map(h => [h.bank, h]));
+  const x = { alpha: 130, meridian: 420, union: 710 };
+  let svg = "";
+  // perimeter boxes
+  BANKS.forEach(b => {
+    const known = b === c.bank || hops[b];
+    svg += `<rect x="${x[b] - 105}" y="30" width="210" height="150" rx="10"
+      fill="${known ? "#141926" : "#10141f"}" stroke="${known ? cols[b] : "#232a3d"}"
+      stroke-dasharray="${known ? "0" : "5 4"}" opacity="${known ? 1 : .5}"/>
+      <text x="${x[b]}" y="52" fill="${cols[b]}" font-size="12" text-anchor="middle">bank ${b}</text>`;
+    const n = b === c.bank ? (c.boundary_edges || []).length : hops[b]?.accounts;
+    svg += `<text x="${x[b]}" y="105" fill="#e8ecf5" font-size="26" text-anchor="middle">${n ?? "?"}</text>
+      <text x="${x[b]}" y="126" fill="#8b96ad" font-size="10" text-anchor="middle">mule accounts</text>`;
+    if (hops[b]) svg += `<text x="${x[b]}" y="150" fill="#8b96ad" font-size="10" text-anchor="middle">₦${money(hops[b].total_ngn)}</text>`;
+  });
+  // boundary arrows: dashed until the concordat exists, solid once value is known
+  [["alpha", "meridian"], ["meridian", "union"]].forEach(([a, b]) => {
+    const live = !!hops[b];
+    svg += `<line x1="${x[a] + 105}" y1="105" x2="${x[b] - 105}" y2="105"
+      stroke="${live ? "#ffd479" : "#2b3350"}" stroke-width="${live ? 2.5 : 1.5}"
+      stroke-dasharray="${live ? "0" : "6 5"}" marker-end="url(#ar)"/>
+      <text x="${(x[a] + x[b]) / 2}" y="96" fill="${live ? "#ffd479" : "#8b96ad"}" font-size="10" text-anchor="middle">
+      ${live ? "traced under concordat" : signed ? "agreed, not yet run" : "opaque boundary"}</text>`;
+  });
+  if (f?.cashout_cluster) svg += `<text x="710" y="200" fill="#ffd479" font-size="11" text-anchor="middle">cash-out cluster ${esc(f.cashout_cluster)}</text>`;
+  document.getElementById("graph").innerHTML =
+    `<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#ffd479"/></marker></defs>` + svg;
+}
+
+function renderAudit(c) {
+  const a = c.audit || [];
+  document.getElementById("audit").innerHTML = a.slice(-60).reverse().map(e =>
+    `<div class="row"><span class="who">${esc(e.actor)}</span>
+     <span class="what">${esc(e.action)}</span>
+     <span class="muted">${esc((e.detail || "").slice(0, 110))}</span></div>`).join("");
+}
+
+async function refreshCase() {
+  if (!selected) return;
+  const r = await fetch(`/api/cases/${selected}`);
+  if (!r.ok) return;
+  const c = await r.json();
+  renderBanks(c); renderTranscript(c); renderFinding(c); renderGraph(c); renderAudit(c);
+  lastStatus = c.status;
+}
+
+async function approve() {
+  const btn = event.target; btn.disabled = true; btn.textContent = "approving…";
+  await fetch(`/api/cases/${selected}/approve`, { method: "POST" });
+  setTimeout(refreshCase, 1500);
+}
+
+refreshCases(); refreshCase();
+setInterval(refreshCases, 6000);
+setInterval(refreshCase, 3000);
+</script>
+</body>
+</html>
