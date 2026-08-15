@@ -15,7 +15,8 @@ six invariants — **never write code that violates an invariant** (esp. #1 sove
   No exceptions, including debug paths.
 - One bank codebase (`services/bank`), parameterized by env (`BANK=alpha|meridian|union`).
   Never fork per-bank copies.
-- LLM calls: Gemini 3.5 Flash for agent loops, Pro for negotiation drafting + reports.
+- LLM calls: `gemini-3.5-flash` for everything (3.5 Pro unreleased as of Aug 15; if it ships
+  before the freeze, swap in for negotiation drafting + reports only — see SPEC assumption 5).
   Never assert on raw LLM text in tests — assert on validated structures.
 - Secrets via Secret Manager / env only. Three bank service accounts stay strictly separated.
 

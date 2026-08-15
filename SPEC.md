@@ -21,14 +21,17 @@
 4. The three "banks" are **simulated by us** in one GCP project as three isolated Cloud Run
    services with three separate BigQuery datasets and distinct service accounts. Real multi-org
    deployment is the roadmap slide, not the build.
-5. Exact Gemini model IDs (`gemini-3.5-pro` / `gemini-3.5-flash` assumed) and the A2A Python SDK
-   (`a2a-sdk`; ADK ships A2A support) must be **verified against live docs on day 1** — the rules
-   require Gemini 3.5+.
+5. ~~Verify model IDs / SDKs~~ **Verified 2026-08-15**: `gemini-3.5-flash` is GA on Vertex AI;
+   `gemini-3.5-pro` does NOT exist yet (delayed; newest Pro is 3.1 — too old for the rules).
+   → **All reasoning uses `gemini-3.5-flash`**; if 3.5 Pro ships before the Aug 27 freeze, swap it
+   in for negotiation drafting + reports only. `a2a-sdk` 1.1.2 and `google-adk` 2.7.0 confirmed on
+   PyPI. Clean rooms confirmed real (Analytics Hub API; aggregation-threshold analysis rule is the
+   enforcement we need; regional availability checked in console at the Aug 22 gate).
 6. The repo will be a **new standalone git repo** (hackathon rules: project newly created
    Aug 3–31, 2026). Nothing is copied from n-recon or other prior work; domain knowledge is fine,
    code reuse is not.
-7. Names "Concordat" / "Parley" pass a Devpost + trademark sanity search before we lock the name
-   in the submission (2-minute check, day 1).
+7. ~~Name check~~ **Done 2026-08-15**: no existing "Concordat" AI/agent project found on Devpost —
+   name locked: **Concordat**.
 
 ---
 
@@ -79,7 +82,7 @@ why "data diplomacy" is a new category.
 
 | Layer | Choice | Hackathon requirement satisfied |
 |---|---|---|
-| Reasoning | Gemini 3.5 Pro (negotiation, report writing), Gemini 3.5 Flash (agent loops, extraction) via **Vertex AI** | Mandatory: Gemini 3.5+ |
+| Reasoning | **Gemini 3.5 Flash** via Vertex AI for everything (3.5 Pro not yet released as of Aug 15 — swap in for negotiation/reports if it ships pre-freeze) | Mandatory: Gemini 3.5+ |
 | Agent framework | **Google ADK** (Python), agents exposed over **A2A protocol** (`a2a-sdk`) | Mandatory: Google agent framework |
 | Async backbone | **Pub/Sub** (case steps, negotiation events) | Mandatory: GCP infra service |
 | Compute | **Cloud Run** (3 bank services + registry + mission-control UI) | GCP infra |
@@ -138,12 +141,14 @@ service account). Three deployments prove fleet symmetry and keep 17 days feasib
 # agents/diplomat.py
 class NegotiationProposal(BaseModel):
     """One round of the concordat negotiation. Immutable; every round is audit-logged."""
+
     case_id: str
-    computations: list[JointComputation]   # e.g. path-join on hashed account ids
-    k_threshold: int                       # min group size in any released aggregate
+    computations: list[JointComputation]  # e.g. path-join on hashed account ids
+    k_threshold: int  # min group size in any released aggregate
     identifier_scheme: Literal["sha256_salted"]
     ttl_hours: int
     round: int
+
 
 async def propose_terms(case: CaseState, policy: BankPolicy) -> NegotiationProposal:
     """Draft the narrowest proposal that could still resolve the trace dead-end.
