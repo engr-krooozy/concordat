@@ -15,3 +15,4 @@ data/generator/output/
 .DS_Store
 models/
 *.gguf
+docs/ui/
