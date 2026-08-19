@@ -2,13 +2,19 @@
 # Keeps the dashboard alive during judging: one fresh investigation a day, left parked at the
 # approval gate so whoever opens the URL finds a live case with a decision waiting for them.
 #
+# The job lives in ALPHA's project, not the commons: Cloud Scheduler will only publish to a
+# topic in its own project, and after federation the fleet listens in concordat-alpha. Running
+# it from the commons silently fed a topic nobody was consuming.
+#
 # The message carries no case_id on purpose — the fleet mints one per run, so successive days
 # accumulate as separate cases instead of overwriting one another.
 set -euo pipefail
 export CLOUDSDK_ACTIVE_CONFIG_NAME=concordat
-PROJECT=concordat-hack
+PROJECT=concordat-alpha
 REGION=us-central1
 SA="sa-scheduler-cc@$PROJECT.iam.gserviceaccount.com"
+
+gcloud services enable cloudscheduler.googleapis.com --project="$PROJECT" >/dev/null
 
 if ! gcloud iam service-accounts describe "$SA" --project="$PROJECT" >/dev/null 2>&1; then
   gcloud iam service-accounts create sa-scheduler-cc --display-name="Daily demo seeder" \
@@ -27,6 +33,10 @@ cat >"$BODY_FILE" <<'JSON'
 {"type": "case.kickoff", "bank": "alpha", "report": "Customer fraud report: account holder of ALP-9000001 reports approximately 2.4 million naira stolen via a web transfer they did not authorize on 2026-08-12 (afternoon, WAT). Investigate and trace where the funds went."}
 JSON
 
+# retire any job left behind in the commons from before federation
+gcloud scheduler jobs delete concordat-daily-demo --location="$REGION" \
+  --project=concordat-hack -q 2>/dev/null || true
+
 gcloud scheduler jobs delete concordat-daily-demo --location="$REGION" --project="$PROJECT" -q \
   2>/dev/null || true
 gcloud scheduler jobs create pubsub concordat-daily-demo \
@@ -37,4 +47,4 @@ gcloud scheduler jobs create pubsub concordat-daily-demo \
   --description="Seeds one investigation a day so the judging dashboard is never empty"
 rm -f "$BODY_FILE"
 
-echo "daily seeder scheduled for 06:00 UTC"
+echo "daily seeder scheduled in $PROJECT for 06:00 UTC"
