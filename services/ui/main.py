@@ -55,16 +55,31 @@ def _stores_items():
 
 @lru_cache(maxsize=1)
 def _bank_urls() -> dict[str, str]:
-    """Resolve each fleet's Cloud Run URL in its own project, once."""
+    """Resolve each fleet's Cloud Run URL in its own project, once.
+
+    Normally these arrive as BANK_<BANK>_URL, set by infra/wire_federation.sh: this service
+    holds run.invoker on each fleet but deliberately NOT run.services.get, so it can knock on
+    a bank's door without enumerating what is behind it. The API lookup below therefore fails
+    by design — it is a fallback for a dev running with wider credentials, and if it is being
+    reached in production the wiring has been lost.
+    """
     urls = {}
     for bank in BANKS:
         override = os.environ.get(f"BANK_{bank.upper()}_URL")
         if override:
             urls[bank] = override
             continue
-        service = run_v2.ServicesClient()
-        name = f"projects/{bank_project(bank)}/locations/us-central1/services/bank-{bank}"
-        urls[bank] = service.get_service(name=name).uri
+        try:
+            service = run_v2.ServicesClient()
+            name = f"projects/{bank_project(bank)}/locations/us-central1/services/bank-{bank}"
+            urls[bank] = service.get_service(name=name).uri
+        except Exception as exc:  # surfaced as an actionable 503, never a bare traceback
+            raise RuntimeError(
+                f"mission control has not been told where bank {bank} lives: "
+                f"BANK_{bank.upper()}_URL is unset and looking it up failed ({exc}). "
+                "Re-run infra/wire_federation.sh — a deploy that replaces the environment "
+                "wipes these."
+            ) from exc
     return urls
 
 
@@ -118,7 +133,10 @@ def approve(case_id: str, approver: str = "analyst@mission-control") -> dict:
     """The human gate. Proxied to the owning fleet with this service's identity."""
     case = get_case(case_id)
     bank = case["bank"]
-    url = _bank_urls()[bank]
+    try:
+        url = _bank_urls()[bank]
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     token = id_token_mod.fetch_id_token(google.auth.transport.requests.Request(), url)
     resp = httpx.post(
         f"{url}/cases/{case_id}/approve",

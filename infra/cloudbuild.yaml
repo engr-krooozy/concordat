@@ -117,7 +117,10 @@ steps:
       - --image=${_REPO}/ui:latest
       - --region=${_REGION}
       - --service-account=sa-mission-ui@concordat-hack.iam.gserviceaccount.com
-      - --set-env-vars=GCP_PROJECT=concordat-hack
+      # --update, not --set: wire_federation.sh puts the three BANK_<X>_URL endpoints here,
+      # and --set-env-vars replaces the whole environment. Wiping them breaks the approval
+      # button with a 500 and nothing on the page says why.
+      - --update-env-vars=GCP_PROJECT=concordat-hack
       - --allow-unauthenticated
       - --memory=512Mi
       - --min-instances=1

@@ -107,6 +107,7 @@
   <section>
     <h3>Cases</h3>
     <div class="caselist" id="caselist"><span class="muted">loading…</span></div>
+    <div id="viewing" class="muted" style="margin-top:10px;font-size:13px">select a case</div>
   </section>
 
   <section class="banks" id="banks"></section>
@@ -243,7 +244,7 @@ function renderFinding(c) {
     ${terms}
     <div style="margin-top:14px">${
       c.status === "awaiting_approval"
-        ? `<button onclick="approve()">Approve enforcement</button>
+        ? `<button onclick="approve(this)">Approve enforcement</button>
            <div class="muted" style="margin-top:6px;font-size:12px">agents cannot act until a human clicks</div>`
         : `<span class="muted">${c.status === "closed" ? "approved · enforcement complete" : "awaiting the room"}</span>`}</div>`;
 }
@@ -387,6 +388,15 @@ const NARRATION = {
   closed: "case closed",
 };
 
+function renderViewing(c) {
+  // Every case runs the same planted ring, so the panels below look identical from one case
+  // to the next. Without this line, clicking a chip reads as a dead button.
+  const opened = (c.opened_at || "").replace("T", " ").slice(0, 16);
+  document.getElementById("viewing").innerHTML =
+    `viewing <b style="color:var(--ink)">${esc(c.case_id)}</b> · ${esc(c.status)}` +
+    (opened ? ` · opened ${esc(opened)} UTC` : "");
+}
+
 function renderBanner(c) {
   const el = document.getElementById("banner");
   el.textContent = NARRATION[c.status] || c.status;
@@ -425,14 +435,27 @@ async function refreshCase() {
   const c = await r.json();
   renderBanks(c); renderNegSummary(c); renderTranscript(c); renderFinding(c);
   renderGraph(c); renderAudit(c);
-  renderBanner(c);
+  renderBanner(c); renderViewing(c);
   lastStatus = c.status;
 }
 
-async function approve() {
-  const btn = event.target; btn.disabled = true; btn.textContent = "approving…";
-  await fetch(`/api/cases/${selected}/approve`, { method: "POST" });
-  setTimeout(refreshCase, 1500);
+async function approve(btn) {
+  // btn is passed in: window.event is not reliable, and when it was undefined this threw
+  // before the fetch, so the click looked like it did nothing at all.
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = "approving…";
+  try {
+    const r = await fetch(`/api/cases/${selected}/approve`, { method: "POST" });
+    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 120)}`);
+    setTimeout(refreshCase, 1500);
+  } catch (e) {
+    // a silent failure here is worse than an ugly one: the whole point of this button is
+    // that a human can see their decision take effect.
+    btn.disabled = false; btn.textContent = label;
+    const el = document.getElementById("banner");
+    el.textContent = `approval failed — ${e.message}`;
+    el.className = "banner hot";
+  }
 }
 
 refreshCases(); refreshCase();
