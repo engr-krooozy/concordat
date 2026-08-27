@@ -66,7 +66,10 @@ flowchart TB
    topic and case store. A bank's service account does not appear in any peer's project at
    all, so a cross-perimeter read fails with a 403 from Google rather than a check in our
    code. The only route between banks is a clean room compiled from an accepted concordat.
-   Reproduce with `scripts/verify_sovereignty.py`.
+   Reproduce with `scripts/verify_sovereignty.py`. The commons holds no bank's ledger, and
+   that is checkable in one command: `bq ls --project_id=concordat-hack` lists exactly one
+   dataset, `ground_truth`, and `gcloud run services list --project=concordat-hack` lists
+   exactly two services, `registry` and `mission-control`.
 2. **Deterministic veto**: Gemini drafts proposals and reports; the YAML policy evaluator (plain
    code) has final say on anything crossing the boundary. LLMs propose, policy disposes.
 3. **Perimeter gate**: every outbound free-text field passes deterministic redaction rules and
@@ -77,7 +80,11 @@ flowchart TB
    the room runner drops the room, and each bank revokes its own contribution view — the runner
    has no delete rights inside anyone's dataset. The audit record is the only survivor.
 5. **Asynchrony**: no request/response chains across the system — Pub/Sub events + Firestore
-   state; any service can die mid-case and the case resumes.
+   state; any service can die mid-case and the case resumes. Resumption is the whole point and
+   it has to hold at every step, not just at the clean hand-offs: a handler must be able to
+   pick a case up from whatever state its previous attempt died in (`RESUMABLE_FROM` in
+   `services/bank/case.py`), or a Pub/Sub redelivery is silently dropped and the case is
+   stranded. `case-cdbca153` stopped mid-parley on Aug 22 and resumed on Aug 27.
 6. **Auditability**: every negotiation round, policy verdict, clean-room query, and enforcement
    action is an append-only Firestore audit entry with actor + timestamp + payload hash.
 
