@@ -44,7 +44,7 @@ def main() -> None:
     try:
         for _ in range(60):
             try:
-                if httpx.get("http://localhost:8082/healthz", timeout=2).status_code == 200:
+                if httpx.get("http://localhost:8082/health", timeout=2).status_code == 200:
                     break
             except httpx.HTTPError:
                 time.sleep(1)

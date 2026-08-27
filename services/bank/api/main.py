@@ -50,8 +50,10 @@ def agent_card(request: Request) -> dict:
     return card_json(cfg, base)
 
 
-@app.get("/healthz")
-def healthz() -> dict:
+# /healthz never reaches the container: Google's frontend answers that exact path
+# with its own 404 before Cloud Run routes it. /health is ours.
+@app.get("/health")
+def health() -> dict:
     return {"ok": True, "bank": cfg.bank}
 
 

@@ -16,7 +16,7 @@ from services.bank.agents.fleet import run_investigation
 from services.bank.agents.joint import run_joint_analysis
 from services.bank.agents.negotiation import negotiate
 from services.bank.agents.reporter import draft_report
-from services.bank.case import CaseState, Status
+from services.bank.case import RESUMABLE_FROM, CaseState, Status
 from services.bank.config import BankConfig
 from services.bank.events import CaseEvent, EventBus
 from services.bank.store import CaseStore
@@ -73,9 +73,11 @@ class Orchestrator:
 
     async def _joint_analysis(self, event: CaseEvent) -> None:
         case = self.store.load(event.case_id)
-        if case.status is not Status.AGREED:
+        if case.status not in RESUMABLE_FROM["joint_analysis"]:
             log.info("case %s is %s — no room to compile", case.case_id, case.status)
             return
+        if case.status is not Status.AGREED:
+            log.warning("case %s resuming joint analysis from %s", case.case_id, case.status)
         try:
             await run_joint_analysis(self.cfg, case, self.diplomat)
         finally:
@@ -108,9 +110,11 @@ class Orchestrator:
 
     async def _negotiate(self, event: CaseEvent) -> None:
         case = self.store.load(event.case_id)
-        if case.status is not Status.DEAD_END:
+        if case.status not in RESUMABLE_FROM["negotiate"]:
             log.info("case %s is %s — no negotiation needed", case.case_id, case.status)
             return
+        if case.status is not Status.DEAD_END:
+            log.warning("case %s resuming negotiation from %s", case.case_id, case.status)
         try:
             signed = await negotiate(self.cfg, case, self.diplomat)
         finally:

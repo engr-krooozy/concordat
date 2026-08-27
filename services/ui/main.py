@@ -68,8 +68,10 @@ def _bank_urls() -> dict[str, str]:
     return urls
 
 
-@app.get("/healthz")
-def healthz() -> dict:
+# /healthz never reaches the container: Google's frontend answers that exact path
+# with its own 404 before Cloud Run routes it. /health is ours.
+@app.get("/health")
+def health() -> dict:
     return {"ok": True, "service": "mission-control"}
 
 

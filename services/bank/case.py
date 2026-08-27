@@ -28,17 +28,28 @@ class Status(StrEnum):
     REJECTED = "rejected"
 
 
+# Self-loops are not decoration: a handler that dies mid-step (a peer waking from zero, a
+# dropped connection) is redelivered by Pub/Sub and re-runs that step from the top. Without
+# a self-loop the retry hits an invalid transition and the case is stranded in the state it
+# had reached — which is exactly how three demo cases froze in `negotiating`.
 VALID_TRANSITIONS: dict[Status, set[Status]] = {
     Status.DETECTED: {Status.TRACING},
     Status.TRACING: {Status.DEAD_END, Status.CLOSED},
     Status.DEAD_END: {Status.DISCOVERING},
-    Status.DISCOVERING: {Status.NEGOTIATING},
+    Status.DISCOVERING: {Status.DISCOVERING, Status.NEGOTIATING},
     Status.NEGOTIATING: {Status.NEGOTIATING, Status.AGREED, Status.REJECTED},
-    Status.AGREED: {Status.ROOM_ACTIVE},
-    Status.ROOM_ACTIVE: {Status.JOINT_ANALYSIS},
-    Status.JOINT_ANALYSIS: {Status.AWAITING_APPROVAL},
+    Status.AGREED: {Status.AGREED, Status.ROOM_ACTIVE},
+    Status.ROOM_ACTIVE: {Status.ROOM_ACTIVE, Status.JOINT_ANALYSIS},
+    Status.JOINT_ANALYSIS: {Status.JOINT_ANALYSIS, Status.AWAITING_APPROVAL},
     Status.AWAITING_APPROVAL: {Status.ENFORCING},
     Status.ENFORCING: {Status.CLOSED},
+}
+
+# Statuses a handler may pick a case up from. The first entry is the clean hand-off; the
+# rest are a case resuming after its previous attempt was interrupted part-way.
+RESUMABLE_FROM: dict[str, set[Status]] = {
+    "negotiate": {Status.DEAD_END, Status.DISCOVERING, Status.NEGOTIATING},
+    "joint_analysis": {Status.AGREED, Status.ROOM_ACTIVE, Status.JOINT_ANALYSIS},
 }
 
 

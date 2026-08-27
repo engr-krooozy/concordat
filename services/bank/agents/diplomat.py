@@ -10,11 +10,13 @@ authenticated requests from known counterparts'.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 import google.auth.transport.requests
 import httpx
 from a2a.client import ClientConfig, create_client
+from a2a.client.errors import AgentCardResolutionError
 from a2a.types import Message, Part, Role, SendMessageRequest
 from google.auth import impersonated_credentials
 
@@ -32,6 +34,45 @@ FREE_TEXT_FIELDS = ("rationale", "note", "description")
 
 class PayloadWithheld(RuntimeError):
     """The perimeter gate refused to let a payload leave."""
+
+
+# A sovereign peer is allowed to be asleep. Cloud Run answers for a scaled-to-zero service
+# with a 500 before the container exists, and the A2A client surfaces that as a failure to
+# resolve the agent card — which is a peer that is waking up, not a peer that is refusing.
+# Backoff spans ~62s, comfortably longer than a cold start carrying a 2.3GB Gemma.
+RETRY_DELAYS = (2, 4, 8, 16, 32)
+TRANSIENT = (AgentCardResolutionError, httpx.TransportError, httpx.TimeoutException)
+
+
+def _is_transient(exc: BaseException) -> bool:
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code in (429, 500, 502, 503, 504)
+    return isinstance(exc, TRANSIENT)
+
+
+async def _with_retry(attempt, what: str):
+    """Run an idempotent coroutine factory, waiting out a peer that is still waking.
+
+    Only ever wraps work that has sent nothing yet — resolving a card, listing the registry.
+    A retry around an in-flight negotiation message would risk delivering it twice.
+    """
+    for i, delay in enumerate(RETRY_DELAYS, start=1):
+        try:
+            return await attempt()
+        except Exception as exc:  # narrowed immediately: anything not transient re-raises
+            if not _is_transient(exc):
+                raise
+            log.warning(
+                "%s failed (%s: %s); peer may be cold — retry %d/%d in %ds",
+                what,
+                type(exc).__name__,
+                exc,
+                i,
+                len(RETRY_DELAYS),
+                delay,
+            )
+            await asyncio.sleep(delay)
+    return await attempt()  # last try: let the failure stand
 
 
 def _id_token(cfg: BankConfig, audience: str) -> str:
@@ -95,10 +136,15 @@ class Diplomat:
 
     async def discover(self) -> dict[str, str]:
         """Peer bank -> agent-card URL, from the registry catalog."""
-        async with await self._authed_httpx(self.registry_url) as client:
-            resp = await client.get(f"{self.registry_url}/cards")
-            resp.raise_for_status()
-        peers = {c["bank"]: c["card_url"] for c in resp.json() if c["bank"] != self.cfg.bank}
+
+        async def _fetch() -> list[dict]:
+            async with await self._authed_httpx(self.registry_url) as client:
+                resp = await client.get(f"{self.registry_url}/cards")
+                resp.raise_for_status()
+                return resp.json()
+
+        cards = await _with_retry(_fetch, "registry catalog")
+        peers = {c["bank"]: c["card_url"] for c in cards if c["bank"] != self.cfg.bank}
         log.info("discovered %d counterpart fleets: %s", len(peers), sorted(peers))
         return peers
 
@@ -114,7 +160,10 @@ class Diplomat:
         base = card_url.split("/.well-known/")[0]  # create_client appends the well-known path
         httpx_client = await self._authed_httpx(base)
         try:
-            client = await create_client(base, ClientConfig(httpx_client=httpx_client))
+            client = await _with_retry(
+                lambda: create_client(base, ClientConfig(httpx_client=httpx_client)),
+                f"agent card for {base}",
+            )
             request = SendMessageRequest(
                 message=Message(
                     message_id=f"{self.cfg.bank}-{msg.kind}",

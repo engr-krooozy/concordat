@@ -2,6 +2,11 @@
 # The commons keeps only neutral services: the registry, mission control, and clean rooms.
 #
 #   gcloud builds submit --config infra/cloudbuild.yaml --project=concordat-hack
+#
+# Every service carries --min-instances=1. A sovereign peer scaled to zero answers an A2A
+# card fetch with a Cloud Run 500 before the container exists; the diplomat now retries
+# through that, but a warm fleet is what keeps a live demo honest. Roughly $3-5/day across
+# all five services — drop it back to 0 once judging closes.
 substitutions:
   _REGION: us-central1
   _REPO: us-central1-docker.pkg.dev/concordat-hack/concordat
@@ -40,6 +45,7 @@ steps:
       - --memory=8Gi
       - --cpu=4
       - --timeout=900
+      - --min-instances=1
       - --max-instances=3
 
   - id: deploy-meridian
@@ -58,6 +64,7 @@ steps:
       - --memory=8Gi
       - --cpu=4
       - --timeout=900
+      - --min-instances=1
       - --max-instances=3
 
   - id: deploy-union
@@ -76,6 +83,7 @@ steps:
       - --memory=8Gi
       - --cpu=4
       - --timeout=900
+      - --min-instances=1
       - --max-instances=3
 
   # --- neutral ground stays in the commons ---
@@ -95,6 +103,7 @@ steps:
       - --args=services.registry.main:app,--host,0.0.0.0,--port,8080
       - --no-allow-unauthenticated
       - --memory=512Mi
+      - --min-instances=1
       - --max-instances=2
 
   - id: deploy-ui
@@ -111,6 +120,7 @@ steps:
       - --set-env-vars=GCP_PROJECT=concordat-hack
       - --allow-unauthenticated
       - --memory=512Mi
+      - --min-instances=1
       - --max-instances=3
 
 images:

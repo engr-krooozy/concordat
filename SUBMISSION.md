@@ -84,8 +84,9 @@ Record scenes separately; UI runs from deterministic `make demo`. Subtitles burn
 
 ## Judge-access notes
 
-- Keep all Cloud Run services deployed and warm through judging; set min-instances=1 on UI +
-  registry for judging window; budget alert at $100.
+- All five services carry `--min-instances=1` in `infra/cloudbuild.yaml`, so they stay warm
+  through judging and a peer is never cold when a fleet reaches for it (~$3-5/day; drop to 0
+  after judging). Budget alert at $100.
 - Seed a fresh demo case daily during judging (Cloud Scheduler) so the UI is never empty when a
   judge opens the URL.
 - README quickstart must include a "judge mode": one script that replays the golden path against

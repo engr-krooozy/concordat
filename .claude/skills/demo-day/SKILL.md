@@ -13,7 +13,10 @@ byproduct — flakiness here is P0.
 1. **Reset state**: `make seed` (re-loads the 3 BQ datasets from the fixed seed) then clear
    Firestore case collections (`make demo` does both when implemented — keep it that way).
 2. **Pre-flight** (all must pass before filming or judge access):
-   - Three bank services + registry + cleanroom + UI healthy on Cloud Run (check `/healthz`)
+   - Three bank services + registry + UI serving on Cloud Run. Check `/health`, NOT
+     `/healthz` — Google's frontend answers that exact path with its own 404 before the
+     request reaches the container, so it looks broken however healthy the service is.
+     For the private services use `gcloud run services list` per project.
    - `make test` green; Vertex AI quota not exhausted (one smoke Gemini call)
    - UI shows three empty bank panels, no stale cases
 3. **Run**: `make demo` — publishes the kickoff event for the planted cross-bank ring.

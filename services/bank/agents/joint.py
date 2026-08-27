@@ -13,7 +13,7 @@ from services.bank.a2a import protocol
 from services.bank.a2a.hashing import hash_account
 from services.bank.agents.diplomat import Diplomat
 from services.bank.auth import room_runner_credentials
-from services.bank.case import CaseState, Status
+from services.bank.case import VALID_TRANSITIONS, CaseState, Status
 from services.bank.config import BankConfig
 from services.cleanroom.compiler import (
     Contribution,
@@ -49,6 +49,15 @@ def _grant_writers(commons: str, room_id: str, credentials) -> None:
     client.update_dataset(ds, ["access_entries"])
 
 
+def _advance(case: CaseState, target: Status, actor: str, detail: str) -> None:
+    """Forward-only step. A resumed run re-creates the room (create/dissolve are both
+    idempotent) but must not walk the case backwards to a state it has already left."""
+    if target in VALID_TRANSITIONS.get(case.status, set()):
+        case.transition(target, actor, detail)
+    else:
+        case.log(actor, "resume", f"already past {target}: {detail}")
+
+
 async def run_joint_analysis(cfg: BankConfig, case: CaseState, diplomat: Diplomat) -> None:
     """AGREED -> ROOM_ACTIVE -> JOINT_ANALYSIS -> AWAITING_APPROVAL."""
     signed = protocol.ConcordatSigned.model_validate(case.concordat)
@@ -59,7 +68,8 @@ async def run_joint_analysis(cfg: BankConfig, case: CaseState, diplomat: Diploma
     room_id = create_room(cfg.commons, digest, signed.ttl_hours, creds)
     _grant_writers(cfg.commons, room_id, creds)
     room_ds = room_id.split(".")[-1]
-    case.transition(
+    _advance(
+        case,
         Status.ROOM_ACTIVE,
         f"{cfg.bank}/cleanroom",
         f"room={room_ds} ttl={signed.ttl_hours}h k={signed.k_threshold}",
@@ -73,7 +83,8 @@ async def run_joint_analysis(cfg: BankConfig, case: CaseState, diplomat: Diploma
     contributions: list[Contribution] = [
         initiator_contribution(cfg, case.case_salt, window[0], window[1], own_hashes)
     ]
-    case.transition(
+    _advance(
+        case,
         Status.JOINT_ANALYSIS,
         f"{cfg.bank}/cleanroom",
         f"own hop: {contributions[0].accounts} accounts",

@@ -69,7 +69,17 @@ async def negotiate(
     """Run the full negotiation. Returns the signed concordat, or None if rejected.
     Mutates case (status, transcript, concordat) — caller persists."""
     own_policy = load_policy(cfg)
-    case.transition(Status.DISCOVERING, f"{cfg.bank}/diplomat")
+    if case.status is Status.NEGOTIATING:
+        # a previous attempt died mid-parley (a peer waking from zero, a dropped connection)
+        # and Pub/Sub redelivered. Reopen from round 1: the proposal is rebuilt from case
+        # state, so restarting is safe, and both attempts stay in the transcript.
+        case.log(
+            f"{cfg.bank}/diplomat",
+            "negotiation:restart",
+            "previous attempt was interrupted; reopening from round 1",
+        )
+    else:
+        case.transition(Status.DISCOVERING, f"{cfg.bank}/diplomat")
     peers = await diplomat.discover()
     case.log(f"{cfg.bank}/diplomat", "discovered", f"{sorted(peers)}")
 

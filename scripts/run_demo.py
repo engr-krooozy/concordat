@@ -1,7 +1,7 @@
 """The golden path, end to end, against the deployed fleets.
 
-    make demo                 # full run, auto-approves at the gate
-    make demo -- --no-approve # stop at the approval gate (for the video's manual click)
+    make demo                        # full run, auto-approves at the gate
+    make demo ARGS=--no-approve      # stop at the gate (for the video's manual click)
 
 Publishes one kickoff event and follows the case: solo trace -> dead end -> discovery ->
 negotiation with a counter-round -> clean room -> joint finding -> approval -> enforcement.

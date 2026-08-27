@@ -21,4 +21,4 @@ deploy:
 	gcloud builds submit --config infra/cloudbuild.yaml
 
 demo:
-	$(PYTHON) -m scripts.run_demo
+	$(PYTHON) -m scripts.run_demo $(ARGS)

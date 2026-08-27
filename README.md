@@ -69,6 +69,9 @@ bash infra/setup_a2a.sh --invokers --register   # peer IAM + publish agent cards
 make demo        # run the golden path end to end and print the case as it unfolds
 ```
 
+Health checks use `/health`, not `/healthz`: Google's frontend answers that exact path with
+its own 404 before the request reaches the container, so a healthy service looks broken.
+
 Two more things worth running:
 
 ```bash
