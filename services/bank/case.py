@@ -84,9 +84,10 @@ class CaseState(BaseModel):
     finding: dict | None = None  # joint ring finding assembled in the clean room
     contributions: list[dict] = []  # per-bank k-thresholded hop receipts
     enforcement: list[str] = []  # actions taken inside OUR perimeter only
-    # Stable across retries of the same approved case. Enforcement is the one irreversible
-    # step in the system, and Pub/Sub redelivers: without a key, a handler that dies between
-    # staging actions and closing the case re-stages them on the next attempt.
+    # Stable across retries of the same approved case. Enforcement stages rather than
+    # executes, so a repeat freezes nobody — but it does write the actions into the
+    # append-only audit twice, and Pub/Sub redelivers whenever the handler dies between
+    # staging and closing. The key is what a core banking system would key on downstream.
     enforcement_key: str = ""
 
     def log(self, actor: str, action: str, detail: str = "") -> None:

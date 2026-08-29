@@ -4,11 +4,20 @@ The joint finding tells us a ring exists and how big it is. What we do about it 
 our own affair — we freeze our own accounts, file our own report. We never instruct a peer,
 and we never learn which of their customers were involved.
 
-This is the only irreversible step in the system, which changes what the code around it has
-to be worth. Everything else can be re-run: a trace repeats, a negotiation reopens, a room is
-rebuilt from the same digest. Freezing a customer's account twice is not a retry, it is a
-second incident — so enforcement carries an idempotency key and refuses to stage the same
-approved case twice, however many times Pub/Sub redelivers it.
+Nothing here is irreversible, and the distinction is worth being precise about because the
+guards below are usually justified by a claim this code cannot make. `enforce` builds a list
+of strings and stores it. It calls no core banking system; no customer account is frozen by
+running it, which is what makes it safe to exercise against the live deployment.
+
+Two things ARE one-way. A case's status: `awaiting_approval -> enforcing -> closed`, and
+`closed` has no outgoing transition, so an approved case never returns to the gate. And the
+audit trail, which is append-only — a duplicate run writes thirty more entries into the one
+record we ask people to trust.
+
+The guards sit here anyway, because this is where the handoff would happen. A line reading
+`freeze_and_review:ALP-910000` is exactly the payload a bank's core system would consume, and
+freezing a customer's account twice is not a retry, it is a second incident. The idempotency
+key belongs on the side of that boundary we control.
 
 The staleness guard lives at the approval gate rather than here (see `orchestrator.approve`):
 by the time we reach this function a human has already decided, and the right moment to tell

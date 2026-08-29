@@ -1,11 +1,16 @@
-"""Enforcement is the only irreversible step, so it gets the two guards the rest does not.
+"""The two guards on the step that would be irreversible in a real bank.
 
-Everything else in this system can be re-run: a trace repeats, a negotiation reopens, a room
-is rebuilt from the same digest. Freezing a customer's account twice is not a retry, it is a
-second incident — and approving on the strength of an agreement that has since expired is a
-bank acting without permission it can point to.
+Enforcement here stages rather than executes: it writes `freeze_and_review:ALP-910000` into
+the case and stops. Nobody's account is touched, which is exactly why these guards can be
+tested against the live deployment at all.
 
-Both failure modes are quiet ones. Nothing errors; the wrong thing simply happens.
+They still matter, for two reasons that hold today. A case's status is one-way — `closed` has
+no outgoing transition, so an approved case never returns to the gate. And the audit trail is
+append-only, so a duplicate run corrupts the record we ask people to trust. Beyond that, the
+staged line is the payload a core banking system would consume, and freezing an account twice
+is not a retry but a second incident.
+
+Both failure modes are quiet. Nothing errors; the wrong thing simply happens.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -60,7 +65,8 @@ def approved_case(concordat: dict | None = None) -> CaseState:
 def test_a_redelivered_approval_does_not_freeze_anything_twice():
     """The enforcement handler drafts a report with an LLM after staging actions and before
     closing the case. That call can fail, the case stays `enforcing`, and Pub/Sub redelivers.
-    Without a key, the second attempt freezes every account again."""
+    Without a key, the second attempt stages every freeze again — harmless here, a duplicate
+    instruction to a core banking system anywhere real."""
     cfg, case = cfg_for("alpha"), approved_case()
 
     first = enforce(cfg, case, approver="analyst@alpha")
@@ -108,8 +114,8 @@ def test_a_fresh_concordat_permits_enforcement():
 
 
 def test_approving_after_the_ttl_has_lapsed_is_refused():
-    """The room this rests on dissolved two days ago. Freezing customer accounts on the
-    authority of an expired agreement is the thing every party signed it to avoid."""
+    """The room this rests on dissolved two days ago. Acting on the authority of an expired
+    agreement is the thing every party signed the agreement to avoid."""
     reason = stale_reason(approved_case(signed(hours_ago=72, ttl_hours=48)))
 
     assert reason is not None
