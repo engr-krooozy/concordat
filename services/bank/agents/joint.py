@@ -7,8 +7,10 @@ The chain order is discovered, not configured: each receipt names where the mone
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
+from services.bank import memory
 from services.bank.a2a import protocol
 from services.bank.a2a.hashing import hash_account
 from services.bank.agents.diplomat import Diplomat
@@ -170,6 +172,11 @@ async def run_joint_analysis(cfg: BankConfig, case: CaseState, diplomat: Diploma
     if finding:
         case.finding = finding.model_dump(mode="json")
         case.log(f"{cfg.bank}/cleanroom", "joint_finding", finding.headline())
+        # Keep the shape of this network for next time. What goes in has already passed the
+        # room's aggregation threshold, so nothing individual survives into memory.
+        fact = memory.ring_fact(case.finding)
+        if await asyncio.to_thread(memory.remember, cfg, fact, memory.RINGS):
+            case.log(f"{cfg.bank}/investigator", "remembered", fact)
 
     # the room's work is done: revoke peer contributions, drop the room
     for c in contributions[1:]:

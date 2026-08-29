@@ -7,6 +7,7 @@ results — not model text — are what mutate the case.
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 
 from google.adk.agents import Agent
@@ -14,6 +15,7 @@ from google.adk.models.google_llm import Gemini
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from services.bank import memory
 from services.bank.auth import bank_credentials
 from services.bank.case import BoundaryEdge, CaseState, Status
 from services.bank.config import BankConfig
@@ -160,6 +162,20 @@ async def run_investigation(cfg: BankConfig, case: CaseState, report: str) -> Ca
     agent = build_investigator(cfg, ctx)
     runner = InMemoryRunner(agent=agent, app_name="concordat")
     session = await runner.session_service.create_session(app_name="concordat", user_id="analyst")
+
+    # Ask what this bank already knows. Every case used to begin from nothing, which meant
+    # tracing the same ring shape to the same cash-out cluster on Tuesday having learned
+    # nothing on Monday. Prior findings are k-thresholded aggregates, so there is no
+    # individual in them — it is the shape of the network that carries forward, not a person.
+    priors = await asyncio.to_thread(memory.recall, cfg, report, memory.RINGS)
+    if priors:
+        case.log(f"{cfg.bank}/investigator", "recalled", f"{len(priors)} prior finding(s)")
+        report = (
+            f"{report}\n\nWhat this bank has seen before (prior cases, aggregate only — "
+            "treat as a hypothesis to check, not as evidence):\n"
+            + "\n".join(f"- {p}" for p in priors)
+        )
+
     msg = types.Content(role="user", parts=[types.Part(text=report)])
     async for event in runner.run_async(user_id="analyst", session_id=session.id, new_message=msg):
         if event.content and event.content.parts:

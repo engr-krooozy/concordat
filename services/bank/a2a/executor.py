@@ -1,6 +1,16 @@
 """A2A server executor: how OTHER banks' fleets talk to ours. Incoming Messages carry one
-JSON text part = one NegotiationMessage. Today: handshake. The negotiation state machine
-plugs in here (Phase 2 day 2).
+JSON text part = one NegotiationMessage.
+
+Everything structured in that message is a Pydantic model the policy engine then evaluates,
+so a peer cannot smuggle anything through the numbers or the enums. The free text is the
+soft spot: `rationale`, `note` and each computation's `description` are prose written by
+another bank's LLM, and they end up in the context of ours. A counterparty that wanted our
+investigator to misbehave would put it exactly there.
+
+So peer prose is screened by Model Armor before `_respond` sees it, and a message carrying a
+prompt-injection attempt is rejected as a policy violation like any other — recorded in the
+transcript, attributable to the bank that sent it. Rival banks are the threat model of this
+whole project; it would be strange to trust their prose.
 """
 
 from __future__ import annotations
@@ -19,6 +29,7 @@ from services.bank.a2a.card import IDENTIFIER_SCHEME
 from services.bank.auth import bank_credentials
 from services.bank.config import BankConfig
 from services.bank.policy.engine import counter_terms, evaluate, load_policy
+from services.bank.redaction import armor
 from services.cleanroom.compiler import contribute_hop, revoke_contribution
 
 log = logging.getLogger("concordat.a2a")
@@ -78,8 +89,39 @@ class NegotiationExecutor(AgentExecutor):
         )
         await event_queue.enqueue_event(reply)
 
+    def _screen_inbound(self, incoming: protocol.NegotiationMessage) -> list[str]:
+        """Read a peer's prose before our agents do. Returns the filters that fired."""
+        hits: list[str] = []
+        texts = [(f, getattr(incoming, f, None)) for f in ("rationale", "note")]
+        texts += [
+            (f"computations[{i}].description", c.description)
+            for i, c in enumerate(getattr(incoming, "computations", None) or [])
+        ]
+        for field, value in texts:
+            if not isinstance(value, str) or not value.strip():
+                continue
+            verdict = armor.scan_inbound(value)
+            if verdict.matched:
+                hits.extend(f"prompt_injection:{field}/{f}" for f in verdict.filters)
+        return hits
+
     async def handle(self, incoming: protocol.NegotiationMessage) -> protocol.NegotiationMessage:
-        response = self._respond(incoming)
+        threats = self._screen_inbound(incoming)
+        if threats:
+            log.warning(
+                "REJECT from %s: peer prose failed inbound screening %s",
+                getattr(incoming, "bank", "unknown"),
+                threats,
+            )
+            response = protocol.PolicyVerdict(
+                bank=self.cfg.bank,
+                case_ref=getattr(incoming, "case_ref", "unknown"),
+                round=getattr(incoming, "round", 1),
+                verdict="reject",
+                violated_rules=threats,
+            )
+        else:
+            response = self._respond(incoming)
         if not isinstance(incoming, protocol.Handshake):  # handshakes are not case-bound
             self._log_exchange(incoming, response)
         return response

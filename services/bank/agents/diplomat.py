@@ -134,8 +134,28 @@ class Diplomat:
         token = _id_token(self.cfg, audience)
         return httpx.AsyncClient(headers={"Authorization": f"Bearer {token}"}, timeout=60)
 
+    async def _catalog_peers(self) -> dict[str, str]:
+        """Vertex AI Agent Engine, in the commons, is the catalog of record.
+
+        A registry entry is public information — which fleets exist and where to knock — so
+        it is the one part of this system that belongs on neutral ground. The runtime it
+        points at stays inside the bank that owns it.
+        """
+        from services.registry import agent_engine
+
+        cards = await asyncio.to_thread(agent_engine.cards, bank_credentials(self.cfg))
+        return {b: url for b, url in cards.items() if b != self.cfg.bank}
+
     async def discover(self) -> dict[str, str]:
-        """Peer bank -> agent-card URL, from the registry catalog."""
+        """Peer bank -> agent-card URL."""
+        try:
+            peers = await self._catalog_peers()
+            if peers:
+                log.info("discovered %d fleets via Agent Engine: %s", len(peers), sorted(peers))
+                return peers
+            log.warning("Agent Engine catalog is empty; falling back to the registry service")
+        except Exception as exc:  # noqa: BLE001 - discovery must survive a catalog outage
+            log.warning("Agent Engine catalog unreachable (%s); falling back", exc)
 
         async def _fetch() -> list[dict]:
             async with await self._authed_httpx(self.registry_url) as client:
@@ -145,7 +165,7 @@ class Diplomat:
 
         cards = await _with_retry(_fetch, "registry catalog")
         peers = {c["bank"]: c["card_url"] for c in cards if c["bank"] != self.cfg.bank}
-        log.info("discovered %d counterpart fleets: %s", len(peers), sorted(peers))
+        log.info("discovered %d counterpart fleets via the registry: %s", len(peers), sorted(peers))
         return peers
 
     async def send(

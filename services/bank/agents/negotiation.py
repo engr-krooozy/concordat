@@ -11,12 +11,14 @@ demoable governance, not a failure mode.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from google.adk.agents import Agent
 from google.adk.runners import InMemoryRunner
 from google.genai import types
 
+from services.bank import memory
 from services.bank.a2a import protocol
 from services.bank.a2a.card import IDENTIFIER_SCHEME
 from services.bank.a2a.hashing import hash_account, new_case_salt
@@ -181,6 +183,17 @@ async def negotiate(
         _record(case, "sent", peer, signed)
         echo = await diplomat.send(card_url, signed)
         _record(case, "received", peer, echo)
+    # What each counterparty actually settled at. Our own observation of a negotiation we
+    # took part in — the thing a human who deals with these banks weekly would simply know.
+    for peer in peers:
+        await asyncio.to_thread(
+            memory.remember,
+            cfg,
+            memory.counterparty_fact(
+                peer, signed.k_threshold, signed.ttl_hours, own_policy.version
+            ),
+            memory.COUNTERPARTIES,
+        )
     case.concordat = signed.model_dump(mode="json")
     case.transition(
         Status.AGREED,

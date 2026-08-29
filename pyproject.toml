@@ -10,6 +10,7 @@ dependencies = [
     "google-cloud-bigquery",
     "google-cloud-firestore",
     "google-cloud-pubsub",
+    "google-cloud-modelarmor",
     "fastapi",
     "uvicorn",
     "pydantic>=2",
