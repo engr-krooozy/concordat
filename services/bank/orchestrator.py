@@ -19,6 +19,7 @@ from services.bank.agents.reporter import draft_report
 from services.bank.case import RESUMABLE_FROM, CaseState, Status
 from services.bank.config import BankConfig
 from services.bank.events import CaseEvent, EventBus
+from services.bank.intake import transcribe_report
 from services.bank.store import CaseStore
 
 log = logging.getLogger("concordat.orchestrator")
@@ -51,9 +52,27 @@ class Orchestrator:
         # scheduled kickoffs arrive without an id — a fixed one would overwrite the same case
         case_id = event.case_id or f"case-{uuid.uuid4().hex[:8]}"
         case = CaseState(case_id=case_id, bank=self.cfg.bank)
-        case.log(f"{self.cfg.bank}/intake", "report", event.report)
+
+        report = event.report
+        if event.report_audio:
+            # A customer phoned it in. The fleet listens rather than waiting for someone to
+            # type it up; if the recording is unusable we fall back to whatever text came
+            # with the event, because a fraud report should open a case either way.
+            heard = await transcribe_report(self.cfg, event.report_audio)
+            if heard:
+                report = heard.as_report()
+                case.log(
+                    f"{self.cfg.bank}/intake",
+                    "voice_note",
+                    f"{event.report_audio} -> account={heard.account} "
+                    f"amount={heard.amount_ngn:,.0f} channel={heard.channel}",
+                )
+            else:
+                case.log(f"{self.cfg.bank}/intake", "voice_note_unreadable", event.report_audio)
+
+        case.log(f"{self.cfg.bank}/intake", "report", report)
         self.store.save(case)
-        await run_investigation(self.cfg, case, event.report)
+        await run_investigation(self.cfg, case, report)
         self.store.save(case)
         self.bus.publish(
             CaseEvent(type="case.trace_done", bank=self.cfg.bank, case_id=case.case_id)

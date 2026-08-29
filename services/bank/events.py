@@ -26,6 +26,9 @@ class CaseEvent(BaseModel):
     bank: str
     case_id: str = ""  # kickoff may leave this empty; the fleet mints one (scheduled runs)
     report: str = ""  # kickoff only: the analyst's fraud report text
+    # kickoff only: a customer's voice note in THIS bank's own bucket. When present the fleet
+    # listens to it and writes its own report; `report` is then the fallback, not the input.
+    report_audio: str = ""
 
 
 class EventBus:
