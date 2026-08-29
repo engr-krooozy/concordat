@@ -27,6 +27,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import UTC, datetime
 
 from pydantic import BaseModel, Field
 
@@ -35,14 +36,19 @@ from services.bank.config import BankConfig
 log = logging.getLogger("concordat.intake")
 
 INSTRUCTION = """You are the intake desk of a Nigerian retail bank's fraud team.
+Today is {today}.
 
 Listen to the caller and return ONLY a JSON object, no prose and no code fence:
-{"account": "...", "amount_ngn": 0, "when": "...", "channel": "...", "summary": "..."}
+{{"account": "...", "amount_ngn": 0, "when": "...", "when_date": "YYYY-MM-DD",
+  "channel": "...", "summary": "..."}}
 
 - account: the caller's own account id exactly as spoken, normalised to the bank's format
   (three letters, a hyphen, then digits). "A L P nine million and one" is ALP-9000001.
 - amount_ngn: a plain number, no separators. "two point four million" is 2400000.
-- when: what the caller said about timing, in their words ("yesterday afternoon, around 2pm").
+- when: what the caller said about timing, in their words ("the 12th, in the afternoon").
+- when_date: that resolved to an absolute date, using today's date above. Callers say "the
+  twelfth" or "last Tuesday" and never say the year — work it out. Pick the most recent
+  matching date that is not in the future. Empty string only if they gave no timing at all.
 - channel: how they say the money moved (web transfer, POS, ATM, transfer), or "unknown".
 - summary: one sentence, in the third person, for the case file.
 
@@ -53,15 +59,26 @@ class VoiceReport(BaseModel):
     account: str = ""
     amount_ngn: float = 0
     when: str = ""
+    when_date: str = ""  # ISO, resolved against the bank's clock — see below
     channel: str = "unknown"
     summary: str = ""
     transcript: str = Field(default="", exclude=True)
 
     def as_report(self) -> str:
-        """The text a tracer already knows how to read."""
+        """The text a tracer already knows how to read.
+
+        The absolute date matters more than it looks. An early version passed the caller's
+        own words straight through — "the twelfth of August" — and the investigator searched
+        2024, then 2023, then 2021, sensibly and exhaustively, for a ring that happened in
+        2026. Nobody says the year out loud on the phone, so resolving it is the intake's
+        job, not the caller's.
+        """
         amount = f"approximately {self.amount_ngn:,.0f} naira" if self.amount_ngn else "an amount"
-        when = self.when or "recently"
         channel = self.channel if self.channel != "unknown" else "an unauthorised transfer"
+        if self.when_date:
+            when = f"on {self.when_date}" + (f" ({self.when})" if self.when else "")
+        else:
+            when = self.when or "recently"
         return (
             f"Customer fraud report, filed by voice note: account holder of "
             f"{self.account or 'an unidentified account'} reports {amount} stolen via "
@@ -99,7 +116,9 @@ async def transcribe_report(cfg: BankConfig, audio_uri: str) -> VoiceReport | No
             model=cfg.model,
             contents=[
                 types.Part.from_uri(file_uri=audio_uri, mime_type="audio/mpeg"),
-                types.Part.from_text(text=INSTRUCTION),
+                types.Part.from_text(
+                    text=INSTRUCTION.format(today=datetime.now(UTC).date().isoformat())
+                ),
             ],
         )
         raw = (response.text or "").strip()
@@ -110,9 +129,10 @@ async def transcribe_report(cfg: BankConfig, audio_uri: str) -> VoiceReport | No
         report = VoiceReport.model_validate(data)
         report.transcript = raw
         log.info(
-            "intake: voice note understood — account=%s amount=%s channel=%s",
+            "intake: voice note understood — account=%s amount=%s date=%s channel=%s",
             report.account,
             report.amount_ngn,
+            report.when_date or "unresolved",
             report.channel,
         )
         return report

@@ -65,7 +65,8 @@ class Orchestrator:
                     f"{self.cfg.bank}/intake",
                     "voice_note",
                     f"{event.report_audio} -> account={heard.account} "
-                    f"amount={heard.amount_ngn:,.0f} channel={heard.channel}",
+                    f"amount={heard.amount_ngn:,.0f} date={heard.when_date or 'unresolved'} "
+                    f"channel={heard.channel}",
                 )
             else:
                 case.log(f"{self.cfg.bank}/intake", "voice_note_unreadable", event.report_audio)

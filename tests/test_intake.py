@@ -16,7 +16,8 @@ def test_a_heard_report_reads_like_the_typed_one():
     heard = VoiceReport(
         account="ALP-9000001",
         amount_ngn=2400000,
-        when="yesterday afternoon, around 2pm",
+        when="the 12th, in the afternoon",
+        when_date="2026-08-12",
         channel="web transfer",
         summary="Customer reports an unauthorised web transfer.",
     )
@@ -25,9 +26,30 @@ def test_a_heard_report_reads_like_the_typed_one():
 
     assert "ALP-9000001" in report
     assert "2,400,000 naira" in report
-    assert "yesterday afternoon" in report
+    assert "2026-08-12" in report
     assert "web transfer" in report
     assert report.endswith("trace where the funds went.")
+
+
+def test_the_report_carries_an_absolute_date_not_the_caller_s_words():
+    """Nobody says the year out loud. An early version passed "the twelfth of August"
+    straight through and the investigator searched 2024, 2023, then 2021 — sensibly and
+    exhaustively — for a ring that happened in 2026. Resolving the year is the intake's job."""
+    heard = VoiceReport(account="ALP-9000001", when="the twelfth of August", when_date="2026-08-12")
+
+    report = heard.as_report()
+
+    assert "on 2026-08-12" in report
+    # the caller's own phrasing is kept alongside it, not thrown away
+    assert "the twelfth of August" in report
+
+
+def test_an_unresolvable_date_falls_back_to_the_caller_s_words():
+    """Better a vague report than a confidently wrong date."""
+    report = VoiceReport(account="ALP-9000001", when="some time last week").as_report()
+
+    assert "some time last week" in report
+    assert "on " not in report.split("authorise")[1].split(".")[0]
 
 
 def test_a_half_heard_report_still_opens_a_case():

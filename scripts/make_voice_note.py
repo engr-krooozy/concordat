@@ -20,12 +20,18 @@ OUT = Path("data/intake/fraud-report.mp3")
 BUCKET = "gs://concordat-alpha-intake"
 PROJECT = "concordat-alpha"
 
+# The caller names the date. An earlier take said "yesterday afternoon", which is how people
+# actually speak — and the investigator span in circles, because a relative day is not a day
+# it can query a ledger for. Either the intake resolves relative dates against a reference
+# clock, or the caller states one; for a demo that has to be deterministic, the caller states
+# one, and plenty of real callers do.
 SCRIPT = (
-    "Good afternoon. I want to report a fraud on my account, please. Yesterday afternoon, "
-    "around two o'clock, I got an alert that two point four million naira left my account "
-    "through a web transfer. My account number is A L P nine million and one. I did not "
-    "authorise it. I was at work the whole afternoon, I never made any transfer. Please, "
-    "you have to trace where this money went. That money is everything I have."
+    "Good afternoon. I want to report a fraud on my account, please. On the twelfth of "
+    "August, in the afternoon, around two o'clock, I got an alert that two point four "
+    "million naira left my account through a web transfer. My account number is A L P nine "
+    "million and one. I did not authorise it. I was at work the whole afternoon, I never "
+    "made any transfer. Please, you have to trace where this money went. That money is "
+    "everything I have."
 )
 
 
