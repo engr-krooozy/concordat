@@ -11,7 +11,7 @@ import uuid
 
 from services.bank.agents.diplomat import Diplomat
 from services.bank.agents.enforcer import close as close_case
-from services.bank.agents.enforcer import enforce
+from services.bank.agents.enforcer import enforce, stale_reason
 from services.bank.agents.fleet import run_investigation
 from services.bank.agents.joint import run_joint_analysis
 from services.bank.agents.negotiation import negotiate
@@ -111,6 +111,14 @@ class Orchestrator:
         case = self.store.load(case_id)
         if case.status is not Status.AWAITING_APPROVAL:
             raise ValueError(f"case {case_id} is {case.status}, not awaiting approval")
+
+        # A human can take as long as they need; the agreement underneath them cannot.
+        stale = stale_reason(case)
+        if stale:
+            case.log(f"{self.cfg.bank}/analyst", "approval_refused:stale_concordat", stale)
+            self.store.save(case)
+            log.warning("refused approval of %s: %s", case_id, stale)
+            raise ValueError(stale)
         case.transition(Status.ENFORCING, f"{self.cfg.bank}/analyst", f"approved by {approver}")
         self.store.save(case)
         self.bus.publish(

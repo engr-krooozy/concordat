@@ -446,7 +446,13 @@ async function approve(btn) {
   btn.disabled = true; btn.textContent = "approving…";
   try {
     const r = await fetch(`/api/cases/${selected}/approve`, { method: "POST" });
-    if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 120)}`);
+    if (!r.ok) {
+      // A refusal here is usually the staleness guard, and it carries a sentence worth
+      // reading — show that, not the status code and a slice of JSON.
+      let why = `${r.status}`;
+      try { why = (await r.json()).detail || why; } catch { why = `${r.status}`; }
+      throw new Error(why);
+    }
     setTimeout(refreshCase, 1500);
   } catch (e) {
     // a silent failure here is worse than an ugly one: the whole point of this button is

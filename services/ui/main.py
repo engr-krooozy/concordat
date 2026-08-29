@@ -145,7 +145,14 @@ def approve(case_id: str, approver: str = "analyst@mission-control") -> dict:
         timeout=90,
     )
     if resp.status_code >= 400:
-        raise HTTPException(status_code=resp.status_code, detail=resp.text)
+        # The fleet already explains itself — a refused approval says which term lapsed and
+        # what to do about it. Passing resp.text through wraps that in a second layer of JSON
+        # and the analyst reads escape sequences instead of the sentence.
+        try:
+            detail = resp.json().get("detail", resp.text)
+        except ValueError:
+            detail = resp.text
+        raise HTTPException(status_code=resp.status_code, detail=detail)
     log.info("case %s approved by %s", case_id, approver)
     return resp.json()
 
