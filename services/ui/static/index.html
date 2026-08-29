@@ -92,6 +92,21 @@
     border: 1px solid var(--line); background: #1b2233; color: var(--dim); }
   .banner.hot { border-color: #4a4020; background: #241f10; color: var(--gold); }
   .caselist { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* What actually ran on this case. Four of the fleet's capabilities leave traces only in
+     the audit feed at the very bottom, where they read as noise between thirty freeze lines.
+     This lifts them to where someone looks first. */
+  .prov { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .prov .p {
+    background: #161d2e; border: 1px solid #26304a; border-radius: 4px;
+    padding: 6px 10px; font-size: 12px; color: var(--dim); line-height: 1.5;
+  }
+  .prov .p b { color: var(--ink); font-weight: 500; }
+  .prov .p .k {
+    display: block; font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: #5d6b8a; margin-bottom: 2px;
+  }
+  .prov .p.warn { border-color: #6b4b12; }
+  .prov .p.warn b { color: var(--accent); }
   .caselist button { background: #1b2233; color: var(--dim); font-weight: 400;
     border: 1px solid var(--line); font-family: ui-monospace, monospace; font-size: 11px; }
   .caselist button.sel { background: #24304a; color: var(--ink); border-color: var(--accent); }
@@ -108,6 +123,7 @@
     <h3>Cases</h3>
     <div class="caselist" id="caselist"><span class="muted">loading…</span></div>
     <div id="viewing" class="muted" style="margin-top:10px;font-size:13px">select a case</div>
+    <div id="provenance" class="prov"></div>
   </section>
 
   <section class="banks" id="banks"></section>
@@ -397,6 +413,51 @@ function renderViewing(c) {
     (opened ? ` · opened ${esc(opened)} UTC` : "");
 }
 
+function renderProvenance(c) {
+  // Read from the case's own audit rather than a flag we set: if the line is not in the
+  // record, the thing did not happen, and this panel should not claim it did.
+  const audit = c.audit || [];
+  const find = a => audit.find(e => e.action === a);
+  const chips = [];
+
+  const voice = find("voice_note");
+  chips.push(voice
+    ? `<div class="p"><span class="k">intake</span><b>voice note</b> · Gemini extracted the account, amount and date</div>`
+    : `<div class="p"><span class="k">intake</span>typed report</div>`);
+
+  const recalled = find("recalled");
+  if (recalled) {
+    chips.push(`<div class="p"><span class="k">memory bank</span><b>${esc(recalled.detail)}</b> recalled before tracing</div>`);
+  }
+  const kept = find("remembered");
+  if (kept) {
+    chips.push(`<div class="p"><span class="k">memory bank</span>kept this ring's shape for the next case</div>`);
+  }
+
+  // the gate logs one line per outbound payload; report the layers that actually answered
+  const gates = audit.filter(e => e.action === "perimeter_gate");
+  if (gates.length) {
+    const m = (gates[0].detail || "").match(/\(([a-z+]+)\)/);
+    const n = gates.length;
+    chips.push(`<div class="p"><span class="k">perimeter gate</span><b>${esc(m ? m[1] : "rules")}</b> · ${n} payload${n === 1 ? "" : "s"} screened</div>`);
+  }
+
+  if ((c.negotiation_transcript || []).length) {
+    chips.push(`<div class="p"><span class="k">discovery</span><b>Agent Engine</b> catalog, A2A direct</div>`);
+  }
+
+  // The agreement's clock, which is what the approval gate checks before it lets anyone act.
+  const cc = c.concordat;
+  if (cc && cc.signed_at && cc.ttl_hours) {
+    const left = (new Date(cc.signed_at).getTime() + cc.ttl_hours * 3600e3 - Date.now()) / 3600e3;
+    chips.push(left > 0
+      ? `<div class="p"><span class="k">agreement</span>k=${cc.k_threshold} · expires in <b>${left.toFixed(1)}h</b></div>`
+      : `<div class="p warn"><span class="k">agreement</span><b>expired ${(-left).toFixed(1)}h ago</b> · enforcement no longer permitted</div>`);
+  }
+
+  document.getElementById("provenance").innerHTML = chips.join("");
+}
+
 function renderBanner(c) {
   const el = document.getElementById("banner");
   el.textContent = NARRATION[c.status] || c.status;
@@ -435,7 +496,7 @@ async function refreshCase() {
   const c = await r.json();
   renderBanks(c); renderNegSummary(c); renderTranscript(c); renderFinding(c);
   renderGraph(c); renderAudit(c);
-  renderBanner(c); renderViewing(c);
+  renderBanner(c); renderViewing(c); renderProvenance(c);
   lastStatus = c.status;
 }
 
