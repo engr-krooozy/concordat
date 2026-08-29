@@ -26,8 +26,18 @@ OUT = ROOT / "output"
 
 CHANNELS = np.array(["transfer", "pos", "ussd", "web"])
 NARRATIONS = np.array(
-    ["transfer", "school fees", "invoice 4421", "salary aug", "pos purchase",
-     "airtime topup", "loan repayment", "gift", "rent", "supplies"]
+    [
+        "transfer",
+        "school fees",
+        "invoice 4421",
+        "salary aug",
+        "pos purchase",
+        "airtime topup",
+        "loan repayment",
+        "gift",
+        "rent",
+        "supplies",
+    ]
 )
 SCHEMA = pa.schema(
     [
@@ -70,13 +80,34 @@ class Ledgers:
     def add_bulk(self, bank: str, arrays: dict[str, np.ndarray]) -> None:
         self.chunks[bank].append(pa.table(arrays, schema=SCHEMA))
 
-    def add_txn(self, txn_id, ts, src_acct, dst_acct, src_bank, dst_bank, amount,
-                channel="transfer", narration="transfer", pattern=None, note=""):
+    def add_txn(
+        self,
+        txn_id,
+        ts,
+        src_acct,
+        dst_acct,
+        src_bank,
+        dst_bank,
+        amount,
+        channel="transfer",
+        narration="transfer",
+        pattern=None,
+        note="",
+    ):
         if isinstance(ts, np.datetime64):
             ts = ts.astype("datetime64[us]").item()
-        row = dict(txn_id=txn_id, ts=ts, src_account=src_acct, dst_account=dst_acct,
-                   src_bank=src_bank, dst_bank=dst_bank, amount=float(amount),
-                   currency="NGN", channel=channel, narration=narration)
+        row = {
+            "txn_id": txn_id,
+            "ts": ts,
+            "src_account": src_acct,
+            "dst_account": dst_acct,
+            "src_bank": src_bank,
+            "dst_bank": dst_bank,
+            "amount": float(amount),
+            "currency": "NGN",
+            "channel": channel,
+            "narration": narration,
+        }
         self.rows[src_bank].append(row)
         if dst_bank in self.banks and dst_bank != src_bank:
             self.rows[dst_bank].append(row)
@@ -98,7 +129,9 @@ def accounts(prefix: str, n: int) -> np.ndarray:
 def gen_benign(rng, bank, prefix, accts, other_banks, cfg, ledgers: Ledgers) -> None:
     n = cfg["benign_rows_per_bank"]
     start = np.datetime64(cfg["window_start"])
-    ts = (start + rng.integers(0, cfg["window_days"] * 86400, n).astype("timedelta64[s]")).astype("datetime64[us]")
+    ts = (start + rng.integers(0, cfg["window_days"] * 86400, n).astype("timedelta64[s]")).astype(
+        "datetime64[us]"
+    )
     src = rng.choice(accts, n)
     cross = rng.random(n) < cfg["cross_bank_fraction"]
     dst_bank = np.where(cross, rng.choice([b for b, _ in other_banks], n), bank)
@@ -106,16 +139,22 @@ def gen_benign(rng, bank, prefix, accts, other_banks, cfg, ledgers: Ledgers) -> 
     dst = rng.choice(accts, n).astype("U16")
     for ob, oprefix in other_banks:
         m = dst_bank == ob
-        dst[m] = np.char.add(f"{oprefix}-", rng.integers(0, cfg["accounts_per_bank"], int(m.sum())).astype(str))
+        dst[m] = np.char.add(
+            f"{oprefix}-", rng.integers(0, cfg["accounts_per_bank"], int(m.sum())).astype(str)
+        )
     amount = np.round(np.exp(rng.normal(9.2, 1.4, n)), 2)  # lognormal, median ~10k NGN
-    arrays = dict(
-        txn_id=np.char.add(f"{prefix}-B", np.arange(n).astype(str)),
-        ts=ts,
-        src_account=src, dst_account=dst,
-        src_bank=np.full(n, bank), dst_bank=dst_bank,
-        amount=amount, currency=np.full(n, "NGN"),
-        channel=rng.choice(CHANNELS, n), narration=rng.choice(NARRATIONS, n),
-    )
+    arrays = {
+        "txn_id": np.char.add(f"{prefix}-B", np.arange(n).astype(str)),
+        "ts": ts,
+        "src_account": src,
+        "dst_account": dst,
+        "src_bank": np.full(n, bank),
+        "dst_bank": dst_bank,
+        "amount": amount,
+        "currency": np.full(n, "NGN"),
+        "channel": rng.choice(CHANNELS, n),
+        "narration": rng.choice(NARRATIONS, n),
+    }
     ledgers.add_bulk(bank, arrays)
     for ob, _ in other_banks:
         m = dst_bank == ob
@@ -124,14 +163,22 @@ def gen_benign(rng, bank, prefix, accts, other_banks, cfg, ledgers: Ledgers) -> 
 
 def gen_structuring(rng, bank, prefix, accts, cfg, ledgers: Ledgers) -> None:
     start = np.datetime64(cfg["window_start"])
-    for i, acct in enumerate(rng.choice(accts, cfg["structuring_accounts_per_bank"], replace=False)):
+    for i, acct in enumerate(
+        rng.choice(accts, cfg["structuring_accounts_per_bank"], replace=False)
+    ):
         base = start + rng.integers(0, cfg["window_days"] * 86400).item() * np.timedelta64(1, "s")
         for j in range(int(rng.integers(6, 13))):
             ledgers.add_txn(
-                f"{prefix}-S{i}-{j}", base + np.timedelta64(int(rng.integers(0, 172800)), "s"),
-                str(acct), str(rng.choice(accts)), bank, bank,
+                f"{prefix}-S{i}-{j}",
+                base + np.timedelta64(int(rng.integers(0, 172800)), "s"),
+                str(acct),
+                str(rng.choice(accts)),
+                bank,
+                bank,
                 round(float(rng.uniform(480000, 499999)), 2),
-                narration="transfer", pattern="structuring", note=f"burst account {acct}",
+                narration="transfer",
+                pattern="structuring",
+                note=f"burst account {acct}",
             )
 
 
@@ -141,10 +188,16 @@ def gen_velocity(rng, bank, prefix, accts, cfg, ledgers: Ledgers) -> None:
         base = start + rng.integers(0, cfg["window_days"] * 86400).item() * np.timedelta64(1, "s")
         for j in range(int(rng.integers(100, 140))):
             ledgers.add_txn(
-                f"{prefix}-V{i}-{j}", base + np.timedelta64(int(rng.integers(0, 3600)), "s"),
-                str(acct), str(rng.choice(accts)), bank, bank,
+                f"{prefix}-V{i}-{j}",
+                base + np.timedelta64(int(rng.integers(0, 3600)), "s"),
+                str(acct),
+                str(rng.choice(accts)),
+                bank,
+                bank,
                 round(float(rng.uniform(500, 5000)), 2),
-                channel="ussd", pattern="velocity", note=f"velocity account {acct}",
+                channel="ussd",
+                pattern="velocity",
+                note=f"velocity account {acct}",
             )
 
 
@@ -163,34 +216,98 @@ def gen_golden_ring(cfg, ledgers: Ledgers) -> None:
         return t0 + timedelta(minutes=minutes)
 
     g = "golden_ring"
-    ledgers.add_txn("ALP-G0", at(0), "ALP-9000001", "ALP-9000002", "alpha", "alpha", amt,
-                    channel="web", narration="invoice 4421", pattern=g, note="victim debit")
-    ledgers.add_txn("ALP-G1", at(8), "ALP-9000002", "ALP-9000003", "alpha", "alpha", amt * 0.497,
-                    pattern=g, note="alpha hop split 1")
-    ledgers.add_txn("ALP-G2", at(9), "ALP-9000002", "ALP-9000004", "alpha", "alpha", amt * 0.497,
-                    pattern=g, note="alpha hop split 2")
+    ledgers.add_txn(
+        "ALP-G0",
+        at(0),
+        "ALP-9000001",
+        "ALP-9000002",
+        "alpha",
+        "alpha",
+        amt,
+        channel="web",
+        narration="invoice 4421",
+        pattern=g,
+        note="victim debit",
+    )
+    ledgers.add_txn(
+        "ALP-G1",
+        at(8),
+        "ALP-9000002",
+        "ALP-9000003",
+        "alpha",
+        "alpha",
+        amt * 0.497,
+        pattern=g,
+        note="alpha hop split 1",
+    )
+    ledgers.add_txn(
+        "ALP-G2",
+        at(9),
+        "ALP-9000002",
+        "ALP-9000004",
+        "alpha",
+        "alpha",
+        amt * 0.497,
+        pattern=g,
+        note="alpha hop split 2",
+    )
 
     per = amt * 0.98 / w
     # layer 1: two splitters fan out to W alpha mules
     for i in range(w):
         src = "ALP-9000003" if i < w // 2 else "ALP-9000004"
-        ledgers.add_txn(f"ALP-G3-{i}", at(20 + i * 0.5), src, f"ALP-91{i:04d}", "alpha", "alpha",
-                        round(per, 2), pattern=g, note="alpha mule layer")
+        ledgers.add_txn(
+            f"ALP-G3-{i}",
+            at(20 + i * 0.5),
+            src,
+            f"ALP-91{i:04d}",
+            "alpha",
+            "alpha",
+            round(per, 2),
+            pattern=g,
+            note="alpha mule layer",
+        )
     # boundary crossing 1: every alpha mule wires to its own meridian mule
     for i in range(w):
-        ledgers.add_txn(f"ALP-G4-{i}", at(40 + i * 0.5), f"ALP-91{i:04d}", f"MER-92{i:04d}",
-                        "alpha", "meridian", round(per * 0.995, 2),
-                        pattern=g, note="boundary alpha->meridian")
+        ledgers.add_txn(
+            f"ALP-G4-{i}",
+            at(40 + i * 0.5),
+            f"ALP-91{i:04d}",
+            f"MER-92{i:04d}",
+            "alpha",
+            "meridian",
+            round(per * 0.995, 2),
+            pattern=g,
+            note="boundary alpha->meridian",
+        )
     # boundary crossing 2: meridian mules push onward to union
     for i in range(w):
-        ledgers.add_txn(f"MER-G5-{i}", at(70 + i * 0.5), f"MER-92{i:04d}", f"UNI-93{i:04d}",
-                        "meridian", "union", round(per * 0.99, 2),
-                        pattern=g, note="boundary meridian->union")
+        ledgers.add_txn(
+            f"MER-G5-{i}",
+            at(70 + i * 0.5),
+            f"MER-92{i:04d}",
+            f"UNI-93{i:04d}",
+            "meridian",
+            "union",
+            round(per * 0.99, 2),
+            pattern=g,
+            note="boundary meridian->union",
+        )
     # cash-out: the whole layer concentrates at one ATM cluster
     for i in range(w):
-        ledgers.add_txn(f"UNI-G6-{i}", at(110 + i * 2), f"UNI-93{i:04d}", "CASH", "union", "external",
-                        round(per * 0.985, 2), channel="atm", narration="ATM-LAG-014",
-                        pattern=g, note="cash-out cluster ATM-LAG-014")
+        ledgers.add_txn(
+            f"UNI-G6-{i}",
+            at(110 + i * 2),
+            f"UNI-93{i:04d}",
+            "CASH",
+            "union",
+            "external",
+            round(per * 0.985, 2),
+            channel="atm",
+            narration="ATM-LAG-014",
+            pattern=g,
+            note="cash-out cluster ATM-LAG-014",
+        )
 
 
 def gen_red_herring(cfg, ledgers: Ledgers) -> None:
@@ -201,14 +318,53 @@ def gen_red_herring(cfg, ledgers: Ledgers) -> None:
         return t0 + timedelta(minutes=minutes)
 
     r = "red_herring_ring"
-    ledgers.add_txn("MER-R0", at(0), "MER-9000901", "MER-9000902", "meridian", "meridian", 850000,
-                    channel="web", pattern=r, note="victim debit")
-    ledgers.add_txn("MER-R1", at(12), "MER-9000902", "MER-9000903", "meridian", "meridian", 845000,
-                    pattern=r, note="hop")
-    ledgers.add_txn("MER-R2", at(30), "MER-9000903", "MER-9000904", "meridian", "meridian", 840000,
-                    pattern=r, note="hop")
-    ledgers.add_txn("MER-R3", at(65), "MER-9000904", "CASH", "meridian", "external", 830000,
-                    channel="atm", narration="ATM-IKJ-002", pattern=r, note="cash-out")
+    ledgers.add_txn(
+        "MER-R0",
+        at(0),
+        "MER-9000901",
+        "MER-9000902",
+        "meridian",
+        "meridian",
+        850000,
+        channel="web",
+        pattern=r,
+        note="victim debit",
+    )
+    ledgers.add_txn(
+        "MER-R1",
+        at(12),
+        "MER-9000902",
+        "MER-9000903",
+        "meridian",
+        "meridian",
+        845000,
+        pattern=r,
+        note="hop",
+    )
+    ledgers.add_txn(
+        "MER-R2",
+        at(30),
+        "MER-9000903",
+        "MER-9000904",
+        "meridian",
+        "meridian",
+        840000,
+        pattern=r,
+        note="hop",
+    )
+    ledgers.add_txn(
+        "MER-R3",
+        at(65),
+        "MER-9000904",
+        "CASH",
+        "meridian",
+        "external",
+        830000,
+        channel="atm",
+        narration="ATM-IKJ-002",
+        pattern=r,
+        note="cash-out",
+    )
 
 
 def generate(cfg: dict) -> dict[str, pa.Table]:
@@ -247,8 +403,12 @@ def write_parquet(tables: dict[str, pa.Table]) -> None:
 
 def bq(args: list[str], cfg: dict, quiet: bool = False, project: str | None = None) -> None:
     env = {**os.environ, "CLOUDSDK_ACTIVE_CONFIG_NAME": "concordat"}
-    subprocess.run(["bq", f"--project_id={project or cfg['project']}", *args],
-                   check=not quiet, env=env, capture_output=quiet)
+    subprocess.run(
+        ["bq", f"--project_id={project or cfg['project']}", *args],
+        check=not quiet,
+        env=env,
+        capture_output=quiet,
+    )
 
 
 def project_for(bank: str, cfg: dict) -> str:
@@ -262,20 +422,39 @@ def load(cfg: dict) -> None:
         ds = f"bank_{bank}"
         bq(["mk", f"--location={cfg['location']}", "-d", ds], cfg, quiet=True, project=project)
         print(f"  loading {project}:{ds}.transactions ...")
-        bq(["load", "--replace", "--source_format=PARQUET", f"{ds}.transactions",
-            str(OUT / f"{ds}.parquet")], cfg, project=project)
+        bq(
+            [
+                "load",
+                "--replace",
+                "--source_format=PARQUET",
+                f"{ds}.transactions",
+                str(OUT / f"{ds}.parquet"),
+            ],
+            cfg,
+            project=project,
+        )
     # ground truth is the verification key: it stays in the commons and no fleet may read it
     bq(["mk", f"--location={cfg['location']}", "-d", "ground_truth"], cfg, quiet=True)
     print("  loading ground_truth.txns ...")
-    bq(["load", "--replace", "--source_format=PARQUET", "ground_truth.txns",
-        str(OUT / "ground_truth.parquet")], cfg)
+    bq(
+        [
+            "load",
+            "--replace",
+            "--source_format=PARQUET",
+            "ground_truth.txns",
+            str(OUT / "ground_truth.parquet"),
+        ],
+        cfg,
+    )
 
 
 def check(cfg: dict) -> None:
     for sql_file in sorted((ROOT / "checks").glob("*.sql")):
         print(f"\n=== {sql_file.name} ===")
         # bq CLI would parse a leading "--" SQL comment as a flag; strip comment lines
-        sql = "\n".join(l for l in sql_file.read_text().splitlines() if not l.lstrip().startswith("--"))
+        sql = "\n".join(
+            l for l in sql_file.read_text().splitlines() if not l.lstrip().startswith("--")
+        )
         bq(["query", "--use_legacy_sql=false", sql], cfg)
 
 

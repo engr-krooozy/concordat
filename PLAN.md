@@ -135,3 +135,41 @@ services up through judging (Sep 1–?, per rules).
 | Gemini 3.5 quota/latency on Vertex | Request quota day 1; Flash for loops, Pro only where it matters; cache demo-path prompts |
 | Demo flakiness on video day | `make demo` determinism is a hard requirement (Aug 26 checkpoint); record in segments |
 | Solo-builder illness/day job | Every phase checkpoint is independently submittable; worst case, Phase 2 output (Aug 23) + minimal UI is still a novel, complete submission |
+
+---
+
+## What actually happened
+
+Written after the fact, because a plan nobody scores against is just a wish. Dates are the
+ones the git history shows.
+
+| Phase | Planned | Actual | Note |
+|---|---|---|---|
+| 0 · Foundations | Aug 15–16 | Aug 15 | Vertex 3.5 serves only from the `global` endpoint, not `us-central1` — an hour lost to a 404 that reads like a quota problem |
+| 1 · One sovereign fleet | Aug 17–19 | Aug 17–18 | |
+| 2 · Diplomacy | Aug 20–23 | Aug 19–21 | Came in early; the clean room fought back hardest (privacy unit joins, banned aggregates) |
+| 3 · Mission control | Aug 24–26 | Aug 21–22 | Next.js dropped for one hand-written page |
+| — · Federation | not planned | Aug 19 | Added after an honest look at the odds. The largest single improvement in the project, and it was not in the plan |
+| 4 · Submission | Aug 27–31 | Aug 27–31 | Freeze broken once, deliberately — see below |
+
+**The cut-list was never used.** It exists in this document because writing it down before
+the pressure arrives is how you avoid inventing worse cuts under it, and that turned out to be
+enough on its own.
+
+**Three things the risk register missed**, all of them quiet failures rather than loud ones:
+
+- A daily seeder publishing to a topic in the wrong project. Cloud Scheduler only reaches its
+  own project, so after federation the job succeeded every morning into a topic nobody read.
+- `--set-env-vars` replacing an entire environment on redeploy, wiping the endpoints mission
+  control needs and turning every approval into a 500.
+- A Dockerfile pinning its own dependency list, so a package added to `pyproject.toml` alone
+  was simply absent at runtime — passing every test locally, unavailable in production.
+
+None of them errored. Each was found by looking rather than by being told, which is the actual
+lesson: for a system that runs unattended, "nothing is alerting" is not evidence of anything.
+
+**The freeze was broken once, on Aug 29.** Google published a judging Q&A after Aug 27 naming
+specific agent-platform components. Taking them was worth it — Agent Engine as the catalog,
+Memory Bank per bank, Model Armor at both edges, multimodal intake — and everything added
+afterwards shipped with tests and was verified in production the same day. A freeze is there
+to stop *unconsidered* changes, not to make new information unusable.

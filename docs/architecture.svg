@@ -23,8 +23,9 @@
   <text x="72" y="172" fill="#8b96ad" font-size="12">service account sa-bank-alpha · initiator</text>
 
   <rect x="72" y="186" width="180" height="46" rx="8" fill="#1a2133" stroke="#2b3350"/>
-  <text x="84" y="206" fill="#e8ecf5" font-size="13">Detector + Tracer</text>
-  <text x="84" y="223" fill="#8b96ad" font-size="11">ADK · Gemini 3.5 Flash</text>
+  <text x="84" y="204" fill="#e8ecf5" font-size="13">Intake · Detector · Tracer</text>
+  <text x="84" y="219" fill="#8b96ad" font-size="10.5">ADK · Gemini 3.5 Flash</text>
+  <text x="84" y="230" fill="#8b96ad" font-size="10.5">a voice note opens the case</text>
 
   <rect x="266" y="186" width="206" height="46" rx="8" fill="#1a2133" stroke="#2b3350"/>
   <text x="278" y="206" fill="#e8ecf5" font-size="13">Diplomat</text>
@@ -35,8 +36,9 @@
   <text x="84" y="284" fill="#c9b27a" font-size="11">deterministic YAML · has veto</text>
 
   <rect x="266" y="246" width="206" height="52" rx="8" fill="#241f10" stroke="#ffd479"/>
-  <text x="278" y="266" fill="#ffd479" font-size="13" font-weight="bold">Perimeter gate</text>
-  <text x="278" y="284" fill="#c9b27a" font-size="11">rules + local Gemma 3 4B</text>
+  <text x="278" y="264" fill="#ffd479" font-size="12.5" font-weight="bold">Perimeter gate · in and out</text>
+  <text x="278" y="280" fill="#c9b27a" font-size="10">out: rules → Gemma → Model Armor</text>
+  <text x="278" y="292" fill="#c9b27a" font-size="10">in: peer prose → injection screen</text>
 
   <rect x="72" y="312" width="400" height="52" rx="8" fill="#1a2133" stroke="#2b3350"/>
   <text x="84" y="332" fill="#e8ecf5" font-size="13">Enforcer + Reporter</text>
@@ -83,9 +85,10 @@
   <text x="1062" y="256" fill="#ffd479" font-size="11" text-anchor="middle">A2A</text>
 
   <!-- Registry -->
-  <rect x="620" y="490" width="360" height="62" rx="10" fill="#1a2133" stroke="#6ea8ff"/>
-  <text x="640" y="514" fill="#9dc0ff" font-size="14" font-weight="bold">Agent-card registry — the fleet catalog</text>
-  <text x="640" y="534" fill="#8b96ad" font-size="11">/.well-known/agent-card.json · discovery only, never capability</text>
+  <rect x="620" y="484" width="400" height="72" rx="10" fill="#1a2133" stroke="#6ea8ff"/>
+  <text x="640" y="508" fill="#9dc0ff" font-size="14" font-weight="bold">Fleet catalog — Vertex AI Agent Engine</text>
+  <text x="640" y="527" fill="#8b96ad" font-size="10.5">cataloguing is neutral ground; the runtime stays inside each bank</text>
+  <text x="640" y="543" fill="#8b96ad" font-size="10.5">A2A then goes direct, bank to bank, with nothing in between</text>
 
   <!-- ============ NEGOTIATION SEQUENCE ============ -->
   <rect x="52" y="490" width="520" height="240" rx="12" fill="#111726" stroke="#2b3350"/>
@@ -115,10 +118,11 @@
   <text x="1452" y="514" fill="#ff9f6b" font-size="11">aggregate only</text>
 
   <!-- ============ SPINE ============ -->
-  <rect x="52" y="770" width="1496" height="86" rx="12" fill="#111726" stroke="#2b3350"/>
-  <text x="72" y="798" fill="#e8ecf5" font-size="14" font-weight="bold">Asynchronous spine — no request/response chain anywhere in a case</text>
-  <text x="72" y="822" fill="#8b96ad" font-size="12">Pub/Sub case events  ·  Firestore case state, negotiation transcripts, append-only audit  ·  Cloud Run (one image, three fleets + registry + mission control)  ·  Cloud Build CI/CD</text>
-  <text x="72" y="844" fill="#8b96ad" font-size="12">Any service can die mid-case; the next event resumes it from Firestore.</text>
+  <rect x="52" y="766" width="1496" height="96" rx="12" fill="#111726" stroke="#2b3350"/>
+  <text x="72" y="792" fill="#e8ecf5" font-size="14" font-weight="bold">Asynchronous spine — no request/response chain anywhere in a case</text>
+  <text x="72" y="814" fill="#8b96ad" font-size="11.5">Pub/Sub case events  ·  Firestore case state, transcripts, append-only audit  ·  Cloud Run (one image, three fleets + registry + mission control)  ·  Cloud Build CI/CD</text>
+  <text x="72" y="832" fill="#8b96ad" font-size="11.5">Agent Engine Memory Bank, one per bank in its own project — ring shapes carry across cases; only k-thresholded aggregates go in</text>
+  <text x="72" y="850" fill="#8b96ad" font-size="12">Any service can die mid-case; the next event resumes it from Firestore.</text>
 
   <!-- ============ OUTCOME ============ -->
   <rect x="52" y="878" width="1000" height="82" rx="12" fill="#241f10" stroke="#ffd479" stroke-width="2"/>

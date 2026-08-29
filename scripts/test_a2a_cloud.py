@@ -1,7 +1,11 @@
-"""Aug-20 checkpoint: as alpha's diplomat (impersonated bank SA), discover counterpart
-fleets via the deployed registry and A2A-handshake each of them on Cloud Run.
+"""Are the fleets awake and talking? Run this before filming or judging.
 
-    .venv/bin/python -m scripts.test_a2a_cloud
+As alpha's diplomat, under the impersonated bank service account: discover counterpart
+fleets through the Agent Engine catalog, then A2A-handshake each of them on Cloud Run. It
+should return in a couple of seconds. If it pauses first, a retry is waiting out a peer that
+has scaled to zero, and something has knocked min-instances back down.
+
+    CLOUDSDK_ACTIVE_CONFIG_NAME=concordat .venv/bin/python -m scripts.test_a2a_cloud
 """
 
 import asyncio

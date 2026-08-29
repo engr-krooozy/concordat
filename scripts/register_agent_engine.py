@@ -26,8 +26,13 @@ def gcloud(*args: str) -> str:
 
 def fleet_url(bank: str) -> str:
     return gcloud(
-        "run", "services", "describe", f"bank-{bank}", "--region=us-central1",
-        f"--project={project_for(bank)}", "--format=value(status.url)",
+        "run",
+        "services",
+        "describe",
+        f"bank-{bank}",
+        "--region=us-central1",
+        f"--project={project_for(bank)}",
+        "--format=value(status.url)",
     )
 
 

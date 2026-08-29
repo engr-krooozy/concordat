@@ -17,7 +17,7 @@ byproduct — flakiness here is P0.
      `/healthz` — Google's frontend answers that exact path with its own 404 before the
      request reaches the container, so it looks broken however healthy the service is.
      For the private services use `gcloud run services list` per project.
-   - `make test` green (61 tests, no cloud needed); Vertex AI quota not exhausted
+   - `make test` green (73 tests, no cloud needed); Vertex AI quota not exhausted
    - **ADC is the gmail account, not a work one.** Every local script that impersonates a
      bank service account dies without it, and the error names an IAM permission rather than
      the real cause. Check with `gcloud auth application-default login` if anything 403s on

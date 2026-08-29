@@ -22,15 +22,18 @@ lands in the context of ours.
 ```mermaid
 flowchart TB
     subgraph ALPHA["Bank Alpha perimeter (SA: alpha@) — deployed 3x, one image"]
+        A_in[Intake<br/>voice note or typed report]
         A_or[ADK Orchestrator]
         A_det[Detector agent]
         A_tr[Tracer agent]
         A_dip[Diplomat agent]
         A_pol[Policy engine<br/>deterministic YAML evaluator]
-        A_red[Perimeter gate<br/>rules + local Gemma 3 4B]
-        A_enf[Enforcer + Reporter]
-        A_bq[(BQ: bank_alpha<br/>~3.5M rows)]
-        A_det --> A_tr --> A_bq
+        A_red[Perimeter gate<br/>rules → Gemma 3 4B → Model Armor<br/>inbound: peer prose injection screen]
+        A_enf[Enforcer + Reporter<br/>idempotent · refuses expired terms]
+        A_mem[(Memory Bank<br/>cross-case, this bank only)]
+        A_bq[(BQ: bank_alpha<br/>3.74M rows)]
+        A_in --> A_det --> A_tr --> A_bq
+        A_det <-.-> A_mem
         A_dip --> A_pol
         A_dip --> A_red
     end
@@ -44,15 +47,15 @@ flowchart TB
         U_bq[(BQ: bank_union)]
     end
 
-    REG[Agent-card Registry<br/>Cloud Run — the agent catalog]
+    REG[Fleet catalog<br/>Vertex AI Agent Engine<br/>registry service as fallback]
     CR[Clean-room compiler<br/>concordat → room + k-policy views<br/>+ hop chaining + dissolver]
     ROOM[(Ephemeral room<br/>aggregation_threshold_policy<br/>raw SELECT refused by BigQuery)]
     FS[(Firestore<br/>cases, transcripts,<br/>concordats, audit log)]
     PS{{Pub/Sub<br/>case events}}
-    UI[Mission Control UI<br/>Next.js on Cloud Run]
-    GEM[Vertex AI<br/>Gemini 3.5 Pro / Flash]
+    UI[Mission Control<br/>FastAPI + static, Cloud Run<br/>public, no account needed]
+    GEM[Vertex AI<br/>Gemini 3.5 Flash]
 
-    A_dip <-- "A2A: discover" --> REG
+    A_dip <-- "discover" --> REG
     M_fleet <-- "A2A" --> REG
     U_fleet <-- "A2A" --> REG
     A_red <-- "A2A: negotiate<br/>(redacted, hashed)" --> M_fleet

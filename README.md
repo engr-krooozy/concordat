@@ -27,7 +27,7 @@ APPROVE=1 bash scripts/judge_replay.sh    # and exercise the human approval gate
 
 It prints the solo trace hitting the perimeter, the negotiation with both peers pushing
 back, the joint finding no bank could reach alone, and every outbound payload the perimeter
-gate screened. `make test` runs 59 tests with no cloud access at all.
+gate screened. `make test` runs 73 tests with no cloud access at all.
 
 ---
 
@@ -82,7 +82,7 @@ one commons plus one per bank. The project boundary *is* the security model.
 
 ```bash
 python3 -m venv .venv && .venv/bin/pip install -e .   # or: uv venv && uv pip install -e .
-make test                                             # 32 tests, no cloud needed
+make test                                             # 73 tests, no cloud needed
 
 # commons: neutral ground only (registry, mission control, clean rooms)
 bash infra/setup_deploy.sh          # artifact registry + build permissions

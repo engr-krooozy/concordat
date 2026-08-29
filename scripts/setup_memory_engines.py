@@ -26,8 +26,9 @@ def main() -> None:
         parent = f"projects/{cfg.project}/locations/{LOCATION}"
         display = f"concordat-memory-{bank}"
 
-        existing = [e for e in client.list_reasoning_engines(parent=parent)
-                    if e.display_name == display]
+        existing = [
+            e for e in client.list_reasoning_engines(parent=parent) if e.display_name == display
+        ]
         if existing:
             print(f"  {bank:9s} already remembers -> {existing[0].name.split('/')[-1]}")
             continue
@@ -39,9 +40,9 @@ def main() -> None:
                 memory_bank_config=v1b.ReasoningEngineContextSpec.MemoryBankConfig()
             ),
         )
-        created = client.create_reasoning_engine(
-            parent=parent, reasoning_engine=engine
-        ).result(timeout=600)
+        created = client.create_reasoning_engine(parent=parent, reasoning_engine=engine).result(
+            timeout=600
+        )
         print(f"  {bank:9s} -> {created.name.split('/')[-1]}")
 
 

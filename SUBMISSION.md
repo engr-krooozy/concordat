@@ -4,7 +4,7 @@ Deadline: **Aug 31, 2026, 5:00 PM PDT = Sep 1, 1:00 AM WAT. Internal stop: Aug 3
 Track entered: **The Fortified Enterprise Fleet**. Also eligible: Individual/Hobbyist (if solo),
 Best Architectural Design, Grand Prize.
 
-## Live deployment — four GCP projects (verified 2026-08-15)
+## Live deployment — four GCP projects (re-verified 2026-08-29)
 
 Each bank is a **separate project**. The differing Cloud Run hostname hashes below are
 themselves evidence: these services were not deployed side by side.
@@ -15,7 +15,11 @@ themselves evidence: these services were not deployed side by side.
 | Bank Alpha fleet (private) | concordat-alpha | https://bank-alpha-4u5ubaqvyq-uc.a.run.app |
 | Bank Meridian fleet (private) | concordat-meridian | https://bank-meridian-omz2lybk2q-uc.a.run.app |
 | Bank Union fleet (private) | concordat-union | https://bank-union-ui3fivllxa-uc.a.run.app |
-| Agent-card registry (private) | concordat-hack | https://registry-fa7ntw3nkq-uc.a.run.app |
+| Registry fallback (private) | concordat-hack | https://registry-fa7ntw3nkq-uc.a.run.app |
+
+The catalog of record is **Vertex AI Agent Engine** in `concordat-hack`; the registry service
+above stays as a fallback so a catalog outage cannot strand the federation. Each bank also
+holds its own **Memory Bank** and its own **Model Armor** templates inside its own project.
 
 Verified anonymously end to end: the dashboard aggregates case state from three separate
 Firestores, and the approval button reaches across a project boundary to drive a case from
@@ -32,12 +36,15 @@ purpose is to prove a *human* decided, and that property is unchanged. All data 
 
 ## Mandatory checklist (from hackathon rules — verify each before submitting)
 
-- [ ] Functional project meeting track criteria
+- [x] Functional project meeting track criteria — verified end to end in production 29 Aug
 - [x] **Hosted project URL** — https://mission-control-fa7ntw3nkq-uc.a.run.app (public, verified)
-- [x] Text description — drafted in `docs/devpost-description.md` (paste into Devpost)
-- [ ] Code repository (private GitHub OK — grant judge access per Devpost instructions)
-- [ ] README.md with **reproducible setup** (dry-run on clean machine Aug 30)
-- [x] **Architecture diagram** — `docs/architecture.png` (3000x1875, hand-built; source `docs/architecture.svg`)
+- [x] Text description — `docs/devpost-description.md`, current as of 29 Aug (paste into Devpost)
+- [ ] **Code repository — grant judge access.** Private GitHub is allowed; without this the
+      submission cannot be judged at all, so do it first
+- [x] README.md with reproducible setup, a judge quickstart, and `scripts/judge_replay.sh`
+      (needs no clone, no credentials, no GCP project — they said they run your code)
+- [x] **Architecture diagram** — `docs/architecture.png` (3000x1875, hand-built; source
+      `docs/architecture.svg`). Redrawn 29 Aug for the four managed components
 - [ ] Demo video ≤ **4:00**, shows problem, value prop, live demo, **backend running on Google
       Cloud (logs / console / .run.app visible)**, English subtitles
 - [ ] No third-party branding/unlicensed material in video (invent bank names/logos:
@@ -74,9 +81,10 @@ using them for."*
 - [x] **Multimodal** — a case is opened by a customer's *voice note*; Gemini extracts the
       account, amount and window and writes the report the tracer reads. Opens the Best
       Multimodal category, and it is how fraud is actually reported in Nigerian retail banking
-- [x] Blog post drafted — `docs/blog-post.md` ("I taught rival banks' AI agents to negotiate
-      with each other"). Publish to dev.to/Medium by Aug 29 — **needs Mustapha to post**
-- [ ] Social post with `#AllThingsAgenticHackathon` linking the blog — Aug 29
+- [ ] Blog post — `docs/blog-post.md` is written and current ("I taught rival banks' AI agents
+      to negotiate with each other", six failures, ~1,900 words). **Publish it.** Cheapest
+      points on the board and the only ones still unclaimed
+- [ ] Social post with `#AllThingsAgenticHackathon` linking the blog
 
 ## Positioning (use consistently: Devpost description, video VO, blog)
 
@@ -114,5 +122,28 @@ Record scenes separately; UI runs from deterministic `make demo`. Subtitles burn
   after judging). Budget alert at $100.
 - Seed a fresh demo case daily during judging (Cloud Scheduler) so the UI is never empty when a
   judge opens the URL.
-- README quickstart must include a "judge mode": one script that replays the golden path against
-  the deployed environment without any GCP setup.
+- `scripts/judge_replay.sh` is judge mode, and it is done: it walks a real case beat by beat
+  against the live deployment with nothing but `curl` and `python3`. `APPROVE=1` exercises the
+  human gate.
+- **Local scripts need ADC on the gmail account.** Anything that impersonates a bank service
+  account fails with an IAM error naming `iam.serviceAccounts.getAccessToken` if ADC is a work
+  account. `gcloud auth application-default login`, then
+  `gcloud auth application-default set-quota-project concordat-hack`.
+- Sixteen cases sit at the approval gate. Approving is one-way — a closed case cannot return —
+  so spend a different one on each take, and do not approve a case whose concordat has expired
+  expecting it to work: the gate refuses it on purpose.
+
+## Order for the last hours
+
+Christina's closing advice in the judging Q&A was to submit first and refine after, because an
+unsubmitted project scores zero however good it is. So:
+
+1. **Grant judge access to the repo.** Everything else is worthless without it.
+2. **Submit the Devpost form** with the description, diagram, and repo — even before the video
+   is cut. The form can be edited until the deadline; a missed deadline cannot.
+3. **Shoot the video** while the system is warm (`scripts/test_a2a_cloud.py` returns in
+   seconds if it is). Run of show and per-screen directions are in the two companion guides.
+4. **Publish the blog**, then the social post with the hashtag. Up to 0.6 bonus points for
+   maybe an hour of work.
+5. Re-run the pre-flight the morning of judging: `make test`, `scripts/test_armor.py`,
+   `scripts/verify_sovereignty.py`, and confirm the dashboard's newest case is dated today.

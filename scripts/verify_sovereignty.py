@@ -30,8 +30,9 @@ SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 
 def gcloud_json(*args: str) -> dict | list:
     env = {**os.environ, "CLOUDSDK_ACTIVE_CONFIG_NAME": "concordat"}
-    out = subprocess.run(["gcloud", *args, "--format=json"], capture_output=True, text=True,
-                         env=env, check=True).stdout
+    out = subprocess.run(
+        ["gcloud", *args, "--format=json"], capture_output=True, text=True, env=env, check=True
+    ).stdout
     return json.loads(out)
 
 
@@ -51,10 +52,14 @@ def check_iam() -> bool:
     for bank in BANK_PREFIXES:
         project = project_for(bank)
         policy = gcloud_json("projects", "get-iam-policy", project)
-        holders = sorted({
-            m for b in policy["bindings"] if b["role"].startswith("roles/bigquery")
-            for m in b["members"]
-        })
+        holders = sorted(
+            {
+                m
+                for b in policy["bindings"]
+                if b["role"].startswith("roles/bigquery")
+                for m in b["members"]
+            }
+        )
         print(f"   {project}")
         for m in holders:
             who = m.split(":")[-1]
@@ -64,8 +69,11 @@ def check_iam() -> bool:
                 clean = False
             print(f"     {who}{flag}")
         print()
-    print("   No bank appears in another bank's project." if clean
-          else "   FAILED: a peer bank holds access.")
+    print(
+        "   No bank appears in another bank's project."
+        if clean
+        else "   FAILED: a peer bank holds access."
+    )
     return clean
 
 
@@ -82,7 +90,9 @@ def check_reads() -> bool:
             target = f"{project_for(peer)}.bank_{peer}.transactions"
             try:
                 client.query(f"SELECT COUNT(*) AS n FROM `{target}`").result()
-                print(f"   sa-bank-{bank} -> {peer}'s ledger        : READ SUCCEEDED — NOT SOVEREIGN")
+                print(
+                    f"   sa-bank-{bank} -> {peer}'s ledger        : READ SUCCEEDED — NOT SOVEREIGN"
+                )
                 ok = False
             except Exception as exc:  # noqa: BLE001 - any refusal is the pass condition
                 reason = str(exc).splitlines()[0][:88]
@@ -94,8 +104,11 @@ def main() -> None:
     print(f"\nCommons: {COMMONS_PROJECT} (registry, mission control, clean rooms — no ledgers)")
     print("Banks:   " + ", ".join(f"{b} -> {project_for(b)}" for b in BANK_PREFIXES) + "\n")
     passed = check_iam() and check_reads()
-    print("\nSovereignty is enforced by Google across project boundaries, not by our code."
-          if passed else "\nSOVEREIGNTY CHECK FAILED")
+    print(
+        "\nSovereignty is enforced by Google across project boundaries, not by our code."
+        if passed
+        else "\nSOVEREIGNTY CHECK FAILED"
+    )
     sys.exit(0 if passed else 1)
 
 

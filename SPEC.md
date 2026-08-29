@@ -84,16 +84,21 @@ why "data diplomacy" is a new category.
 
 | Layer | Choice | Hackathon requirement satisfied |
 |---|---|---|
-| Reasoning | **Gemini 3.5 Flash** via Vertex AI for everything (3.5 Pro not yet released as of Aug 15 — swap in for negotiation/reports if it ships pre-freeze) | Mandatory: Gemini 3.5+ |
+| Reasoning | **Gemini 3.5 Flash** via Vertex AI for everything. 3.5 Pro never shipped before the freeze, so Flash does all of it, including reading the intake audio | Mandatory: Gemini 3.5+ |
 | Agent framework | **Google ADK** (Python), agents exposed over **A2A protocol** (`a2a-sdk`) | Mandatory: Google agent framework |
 | Async backbone | **Pub/Sub** (case steps, negotiation events) | Mandatory: GCP infra service |
-| Compute | **Cloud Run** (3 bank services + registry + mission-control UI) | GCP infra |
+| Compute | **Cloud Run** — 3 bank fleets, each in its OWN project, plus registry and mission control in the commons | GCP infra |
 | State | **Firestore** (case state, negotiation transcripts, concordat documents, audit log) | GCP infra |
-| Data | **BigQuery** — 3 isolated datasets (~10M synthetic rows total), Analytics Hub clean room | GCP infra, "massive datasets" |
+| Data | **BigQuery** — 3 isolated datasets in 3 projects (11.2M synthetic rows), rooms built with native `aggregation_threshold_policy`. Analytics Hub clean rooms turned out not to exist in the API; the native policy is a stronger claim anyway, since BigQuery refuses the read itself | GCP infra, "massive datasets" |
 | Perimeter gate | **Gemma 3 4B (Q4, llama.cpp)** baked into each bank's container — deterministic rules redact, Gemma gives a second opinion. Size chosen by measurement: 270M/1B are degenerate (see `scripts/eval_gemma_gate.py`) | Bonus points (up to 0.6) — justified, not bolted on |
-| UI | **Next.js** mission control (three bank panels, negotiation transcript, ring graph via cytoscape/d3) on Cloud Run | Hosted project URL requirement |
+| Catalog | **Vertex AI Agent Engine** holds the fleet registry in the commons; our own registry service stays as fallback. The runtime deliberately does not move there | Agent cataloging |
+| Memory | **Agent Engine Memory Bank**, one per bank inside that bank's project — ring shapes and counterparty behaviour carry across cases | Context persistence |
+| Perimeter, outbound | **Model Armor** (SDP via a DLP inspect template) as a third opinion after rules and Gemma — it catches a customer's *name*, which no regex of ours can | Production-level security |
+| Perimeter, inbound | **Model Armor** prompt-injection screening on peer-authored prose before our agents read it | Security between agents |
+| Intake | **Gemini** reads a customer's voice note and extracts account, amount and date; **Cloud Text-to-Speech** generated the synthetic recording | Multimodal |
+| UI | Mission control: **FastAPI + hand-written HTML/SVG** on Cloud Run, public and account-free. Next.js was specced and dropped — a build step bought nothing for one page, and the hand-drawn SVG graph is lighter than cytoscape | Hosted project URL requirement |
 | CI/CD | Cloud Build → Cloud Run | Production-readiness story |
-| Language | Python 3.12 (backend), TypeScript (UI) | — |
+| Language | Python 3.12 throughout; the UI is plain HTML, CSS and JavaScript with no build step | — |
 
 ## Commands
 
@@ -122,16 +127,21 @@ concordat/
       a2a/                   → agent card, A2A server/client wiring
       policy/                → machine-readable data-sharing policy (YAML) + evaluator
       api/                   → FastAPI app: Pub/Sub push endpoints, approval endpoints
-    registry/                → A2A agent-card registry ("agent catalog")
+    intake.py                → a customer's voice note → a case (Gemini, multimodal)
+      memory.py              → cross-case memory in this bank's own Memory Bank
+      redaction/             → rules → Gemma (in-container) → Model Armor, both directions
+    registry/                → Agent Engine catalog client + the fallback registry service
     cleanroom/               → concordat→clean-room compiler + joint-query builder + dissolver
-  ui/                        → Next.js mission control
+    ui/                      → mission control (FastAPI + static)
   data/
     generator/               → synthetic ledger generator (banks, mule rings, noise patterns)
-  infra/                     → Terraform or setup scripts (BQ datasets, Pub/Sub topics, SAs, IAM)
+  infra/                     → idempotent setup scripts (per-bank projects, IAM, Pub/Sub, BQ,
+                               Model Armor + DLP templates, Memory Banks, Agent Engine catalog)
   tests/
   docs/
     architecture.png         → exported diagram (submission requirement)
-    video/                   → script, shot list
+    devpost-description.md   → the text description to paste into Devpost
+    blog-post.md             → the write-up (bonus points)
 ```
 
 **Key design rule:** there is ONE bank codebase, configured per bank (name, dataset, policy file,
@@ -208,13 +218,35 @@ Mapped to judging (40% innovation/utility, 30% architecture, 30% demo/production
    reproducible README, hosted URL, description; bonus: Gemma integration + blog post + hashtag.
 7. Submitted **before Aug 31 evening WAT**, not at the deadline.
 
-## Open Questions
+## Open Questions — all closed
 
-1. Solo or team entry? (Affects Individual/Hobbyist eligibility.)
-2. Which GCP account/billing to burn credits on — new project under personal billing?
+1. ~~Solo or team entry?~~ **Solo.** Entered for Individual/Hobbyist as well as the track.
+2. ~~Which GCP account/billing?~~ **Four projects** under personal billing — `concordat-hack`
+   as the commons plus one per bank. The multi-project split was the single change that made
+   sovereignty checkable rather than asserted: inside one project you can only show you chose
+   not to grant access.
 3. ~~Clean rooms vs fallback~~ **Resolved 2026-08-15**: the Analytics Hub *packaging* API
    (`dataCleanRoomConfig`) is not exposed on v1 or v1beta1 for this project, but BigQuery's
    native `aggregation_threshold_policy` — what clean rooms use underneath — works and is a
    stronger claim than the authorized-views fallback. Shipped that.
-4. Final name: Concordat vs Parley (check availability day 1).
-5. Repo host: GitHub private (rules allow private repos with judge access) — confirm.
+4. ~~Final name: Concordat vs Parley~~ **Concordat.** A concordat is an agreement between
+   parties who do not share a jurisdiction, which is exactly the object the agents negotiate.
+5. ~~Repo host~~ **GitHub, private**, with judge access granted per Devpost's instructions.
+
+## Where the spec was wrong
+
+Kept because the divergences are the interesting part, and a reader comparing this document
+to the code deserves to find the differences named rather than to discover them.
+
+- **The UI.** Specced as Next.js with cytoscape. Shipped as FastAPI serving one hand-written
+  HTML file with a hand-drawn SVG graph. A build step bought nothing for a single page, and
+  the graph is 92 nodes drawn from case data — a layout library would have been more code.
+- **Clean rooms.** Specced against Analytics Hub, which turned out not to expose the API. The
+  native privacy policy is what clean rooms use underneath and refuses the read in BigQuery
+  itself, which is a better sentence to say to a bank than "our code filters it".
+- **One project, then four.** The spec assumed a single project with separated service
+  accounts. That can only demonstrate restraint. Federating cost a day and converted the
+  central claim into a 403 from Google.
+- **Feature freeze held for two days.** Aug 27 was the freeze; a judging Q&A published after
+  it named specific platform components, and taking them was worth breaking the freeze for.
+  Everything added afterwards shipped with tests and was verified in production the same day.

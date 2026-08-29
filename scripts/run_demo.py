@@ -23,8 +23,17 @@ PROJECT = "concordat-alpha"
 
 
 def _bank_alpha_url() -> str:
-    return gcloud("run", "services", "describe", "bank-alpha", "--region=us-central1",
-                  f"--project={PROJECT}", "--format=value(status.url)")
+    return gcloud(
+        "run",
+        "services",
+        "describe",
+        "bank-alpha",
+        "--region=us-central1",
+        f"--project={PROJECT}",
+        "--format=value(status.url)",
+    )
+
+
 REPORT = (
     "Customer fraud report: account holder of ALP-9000001 reports approximately 2.4 million "
     "naira stolen via a web transfer they did not authorize on 2026-08-12 (afternoon, WAT). "

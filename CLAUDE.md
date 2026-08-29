@@ -15,9 +15,15 @@ seven invariants — **never write code that violates an invariant** (esp. #1 so
   No exceptions, including debug paths.
 - One bank codebase (`services/bank`), parameterized by env (`BANK=alpha|meridian|union`).
   Never fork per-bank copies.
-- LLM calls: `gemini-3.5-flash` for everything (3.5 Pro unreleased as of Aug 15; if it ships
-  before the freeze, swap in for negotiation drafting + reports only — see SPEC assumption 5).
-  Never assert on raw LLM text in tests — assert on validated structures.
+- LLM calls: `gemini-3.5-flash` for everything, including reading the intake audio. 3.5 Pro
+  never shipped before the freeze. Never assert on raw LLM text in tests — assert on
+  validated structures.
+- Managed components are sovereign or neutral, never both: Agent Engine holds the *catalog* in
+  the commons (public facts), Memory Bank and Model Armor templates live inside each bank's
+  own project. Never move a fleet's runtime to a shared project — that is the arrangement this
+  project argues against.
+- Anything that reaches the network fails soft and says so. Model Armor and Memory Bank are
+  off by default in tests (`tests/conftest.py`); a suite that reaches Google is a bug.
 - Secrets via Secret Manager / env only. Three bank service accounts stay strictly separated.
 
 ## Commands
@@ -27,10 +33,14 @@ lint | deploy | demo`. Run `make test && make lint` before every commit.
 
 ## Schedule discipline
 
-- Feature freeze **Aug 27**. After that, only demo/submission work (SUBMISSION.md).
+- Feature freeze **Aug 27**, broken once on Aug 29 for the agent-platform components a judging
+  Q&A named after the freeze was set. Everything added then shipped with tests and was verified
+  in production the same day. The bar for breaking it again is that high.
 - If a PLAN.md checkpoint slips 2 days, apply the PLAN.md cut-list in order — do not invent
   alternative scope cuts.
-- `make demo` determinism is a hard requirement from Aug 26 — treat flakiness as a P0 bug.
+- `make demo` determinism is a hard requirement — treat flakiness as a P0 bug. Two P0s so far
+  were silent: a scheduler publishing into the wrong project, and a redelivery guard that
+  turned away every retry. Neither errored. Check by looking, not by waiting to be told.
 
 ## Project skills
 
