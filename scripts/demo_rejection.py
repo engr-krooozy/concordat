@@ -25,20 +25,20 @@ async def main() -> None:
     meridian = peers["meridian"]
 
     def request(**overrides) -> protocol.InvestigationRequest:
-        base = dict(
-            bank="alpha",
-            case_ref="case-governance-demo",
-            round=1,
-            rationale="Requesting a joint trace of a suspected cross-boundary network.",
-            computations=[
+        base = {
+            "bank": "alpha",
+            "case_ref": "case-governance-demo",
+            "round": 1,
+            "rationale": "Requesting a joint trace of a suspected cross-boundary network.",
+            "computations": [
                 protocol.JointComputation(kind="path_join", description="follow hashed accounts")
             ],
-            k_threshold=25,
-            identifier_scheme="sha256_salted_v1",
-            ttl_hours=48,
-            boundary_hashes=[f"{i:064x}" for i in range(30)],
-            case_salt="a1b2c3d4e5f60718",
-        )
+            "k_threshold": 25,
+            "identifier_scheme": "sha256_salted_v1",
+            "ttl_hours": 48,
+            "boundary_hashes": [f"{i:064x}" for i in range(30)],
+            "case_salt": "a1b2c3d4e5f60718",
+        }
         return protocol.InvestigationRequest(**{**base, **overrides})
 
     probes = [
