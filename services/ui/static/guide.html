@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>How to read Concordat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🤝</text></svg>" />
+<style>
+  :root {
+    --bg: #070910; --panel: #0e1219; --raised: #151b26;
+    --line: rgba(255,255,255,.07); --line-2: rgba(255,255,255,.12);
+    --ink: #f2f5fa; --dim: #7c8799;
+    --accent: #6ea8ff; --ok: #3ecf8e; --warn: #f6c453; --bad: #ff6b6b;
+    --gold: #FFCC00; --gold-soft: rgba(255,204,0,.12); --gold-line: rgba(255,204,0,.28);
+    --alpha: #6ea8ff; --meridian: #b98bff; --union: #3ecf8e;
+    --f: "Inter", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.68 var(--f); -webkit-font-smoothing: antialiased; }
+  body::before { content: ""; position: fixed; inset: -20% 0 auto 0; height: 560px; z-index: 0;
+    background: radial-gradient(800px 340px at 30% 0%, rgba(255,204,0,.06), transparent 70%);
+    pointer-events: none; }
+  header, .wrap { position: relative; z-index: 1; }
+  header { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex;
+    align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    position: sticky; top: 0; background: rgba(12,15,22,.92); backdrop-filter: blur(8px); z-index: 20; }
+  h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: -.02em; }
+  .tag { color: var(--dim); font-size: 13px; }
+  .navlink { color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--line-2); border-radius: 12px; padding: 8px 14px; white-space: nowrap;
+    transition: background .15s ease; }
+  .navlink:hover { background: var(--raised); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 8px 24px 96px; }
+
+  .lede { font-size: 22px; line-height: 1.45; color: var(--ink); margin: 40px 0 12px;
+    font-weight: 600; letter-spacing: -.025em; max-width: 30ch; }
+  .lede + p { font-size: 16px; }
+  .lede + p { color: var(--dim); }
+  h2 { font-size: 26px; margin: 56px 0 10px; letter-spacing: -.03em; font-weight: 700; }
+  h3 { font-size: 16px; margin: 30px 0 8px; color: var(--ink); font-weight: 600;
+    letter-spacing: -.01em; }
+  p { margin: 0 0 14px; color: #c3ccdd; }
+  .muted { color: var(--dim); }
+  a { color: var(--accent); }
+
+  .rule { border: 0; border-top: 1px solid var(--line); margin: 40px 0 0; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin: 18px 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+    padding: 18px 20px; transition: border-color .16s ease, transform .16s ease; }
+  .card:hover { border-color: var(--line-2); transform: translateY(-2px); }
+  .card h4 { margin: 0 0 6px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .card p { margin: 0; font-size: 13.5px; color: var(--dim); line-height: 1.55; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+  .d-alpha { background: var(--alpha); } .d-meridian { background: var(--meridian); }
+  .d-union { background: var(--union); } .d-neutral { background: var(--gold); }
+
+  ol.steps { counter-reset: s; list-style: none; padding: 0; margin: 20px 0; }
+  ol.steps li { position: relative; padding-left: 46px; margin-bottom: 22px; }
+  ol.steps li::before { counter-increment: s; content: counter(s); position: absolute; left: 0;
+    top: -2px; width: 32px; height: 32px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--raised); border: 1px solid var(--line-2); color: var(--dim);
+    font-size: 13px; font-weight: 700; }
+  ol.steps b { display: block; margin-bottom: 2px; }
+  ol.steps p { margin: 0; font-size: 14px; color: var(--dim); }
+
+  dl.glos { margin: 18px 0; }
+  dl.glos > div { padding: 14px 0; border-top: 1px solid var(--line); }
+  dl.glos dt { font-weight: 600; font-size: 14.5px; margin-bottom: 4px; }
+  dl.glos dt code { background: #1b2233; border: 1px solid var(--line); border-radius: 4px;
+    padding: 1px 6px; font-size: 12.5px; color: var(--gold); font-weight: 400; }
+  dl.glos dd { margin: 0; color: var(--dim); font-size: 14px; line-height: 1.6; }
+
+  code { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+  pre { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12.5px; line-height: 1.6; color: #c3ccdd; }
+  pre b { color: var(--gold); font-weight: 600; }
+
+  .callout { border-left: 2px solid var(--gold); background: var(--gold-soft); padding: 14px 18px;
+    border-radius: 0 12px 12px 0; margin: 22px 0; font-size: 14.5px; color: #e8dcb4; line-height: 1.62; }
+  .callout b { color: var(--gold); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--dim); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  td code { color: var(--gold); }
+
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px;
+    border: 1px solid var(--line); background: #1b2233; color: var(--dim); }
+  .pill.live { color: var(--gold); border-color: #4a4020; background: #241f10; }
+  .pill.done { color: var(--ok); border-color: #1d4736; background: #10241b; }
+</style>
+</head>
+<body>
+<header>
+  <h1>How to read Concordat</h1>
+  <a class="navlink" href="/">&larr; Back to mission control</a>
+</header>
+
+<div class="wrap">
+
+  <p class="lede">Three rival banks are hunting one fraud ring together. None of them can see
+  the others' customers, and none of them ever will &mdash; that constraint is the whole
+  point, not a limitation of the demo.</p>
+  <p>This page explains what you are looking at, what every term means, and what to click.
+  Five minutes here makes the dashboard read as a story rather than a wall of panels.</p>
+
+  <hr class="rule" />
+
+  <h2>The problem, in one paragraph</h2>
+  <p>A mule network moves stolen money through many accounts at many banks, precisely because
+  no single bank can see the whole trail. Each one watches money arrive, move once or twice,
+  and leave. Privacy law forbids them from pooling raw customer records to assemble the rest,
+  so the rings that cross institutions are the ones that get away.</p>
+  <p>The industry's usual answer is to ship everyone's data to one central provider. That is
+  the arrangement privacy teams resist hardest, and reasonably: it replaces many small risks
+  with one very large one.</p>
+  <p><b>Concordat tries a third thing.</b> Each bank runs its own fleet of AI agents inside its
+  own walls. When a trace dies at the boundary, the fleet does not give up and does not hand
+  over data. It <i>negotiates</i> &mdash; agreeing terms under which a joint answer can be
+  computed without either side seeing the other's records.</p>
+
+  <h2>Who the players are</h2>
+  <p>Three invented banks. Nothing here is a real institution and no data is real.</p>
+  <div class="cards">
+    <div class="card">
+      <h4><span class="dot d-alpha"></span>Bank Alpha</h4>
+      <p>Where the victim banks. Alpha receives the fraud report and starts every
+      investigation, so it is the <b>initiator</b>. The money leaves Alpha almost immediately.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot d-meridian"></span>Bank Meridian</h4>
+      <p>The next stop for the money, and the strict one. Its policy demands the largest group
+      size and the shortest agreement &mdash; which is why it forces the counter-offer you see
+      in every negotiation.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot d-union"></span>Bank Union</h4>
+      <p>Holds the cash-out end of the trail, where the money is finally withdrawn. Its policy
+      is looser than Meridian's, so it rarely sets the final terms.</p>
+    </div>
+    <div class="card">
+      <h4><span class="dot d-neutral"></span>Neutral ground</h4>
+      <p>A fourth Google Cloud project holding only shared, public things: the directory of
+      which fleets exist, this dashboard, and the temporary rooms. <b>It holds no bank's
+      ledger and runs no bank's code.</b></p>
+    </div>
+  </div>
+  <p class="muted">Each bank is a genuinely separate Google Cloud project with its own identity
+  and its own data. That is not decoration: it means one bank reaching for another's records
+  is refused by Google, not by our code. There is nothing to trust us about.</p>
+
+  <h2>What happens in an investigation</h2>
+  <ol class="steps">
+    <li><b>A report arrives</b>
+      <p>Usually a customer's voice note &mdash; nobody reports fraud by filling in a form. The
+      fleet listens and pulls out the account, the amount, and the date the caller meant when
+      they said "the twelfth".</p></li>
+    <li><b>Alpha traces alone, and fails</b>
+      <p>It follows the money through its own ledger, lowering its own thresholds when a hop
+      comes back empty, until every remaining path leaves the bank. That wall is the point of
+      the whole project.</p></li>
+    <li><b>It opens negotiations</b>
+      <p>Alpha proposes terms. Each peer's policy engine answers &mdash; accept, counter, or
+      refuse. Alpha concedes to the strictest terms on the table and all three sign.</p></li>
+    <li><b>The agreement becomes infrastructure</b>
+      <p>The signed terms compile into a temporary clean room. Each bank publishes totals over
+      its own accounts, under the agreed privacy threshold. Nobody sees anybody's rows.</p></li>
+    <li><b>A human decides</b>
+      <p>Nothing is enforced until a person approves. Then each bank acts only inside its own
+      walls: Alpha freezes Alpha's accounts and files its own report.</p></li>
+    <li><b>The room dissolves</b>
+      <p>Each bank revokes its own contribution. Only the audit trail survives.</p></li>
+  </ol>
+
+  <h2>Reading the dashboard</h2>
+
+  <h3>The chips under &ldquo;Cases&rdquo;</h3>
+  <p>Every chip is one complete investigation. Click any of them to follow it. They all chase
+  the same planted ring, so the numbers repeat &mdash; what differs is how each case got there
+  and how far it has gone.</p>
+
+  <h3>The strip under the case id</h3>
+  <p>What actually ran on <i>this</i> case, read from its own audit trail. If a line is not in
+  the record, the strip does not claim it happened &mdash; which is why older cases honestly
+  show fewer layers than recent ones.</p>
+  <table>
+    <tr><th>Label</th><th>Means</th></tr>
+    <tr><td><code>INTAKE</code></td><td>How the case arrived &mdash; a voice note the fleet
+      listened to, or typed text.</td></tr>
+    <tr><td><code>MEMORY BANK</code></td><td>What the fleet remembered from earlier cases before
+      it started, and what it kept afterwards. Only group totals are ever stored, never a
+      person.</td></tr>
+    <tr><td><code>PERIMETER GATE</code></td><td>Which checks ran on text leaving the bank.
+      <code>rules</code> are fixed patterns, <code>gemma</code> is a small model running inside
+      the bank's own container, <code>armor</code> is Google's detector. Each can only tighten,
+      never loosen.</td></tr>
+    <tr><td><code>DISCOVERY</code></td><td>How Alpha found its counterparts &mdash; a registry of
+      which fleets exist, then a direct connection, bank to bank.</td></tr>
+    <tr><td><code>AGREEMENT</code></td><td>The agreed group size and how long the permission
+      lasts. When it expires, enforcement is refused until the banks renegotiate.</td></tr>
+  </table>
+
+  <h3>The three bank panels</h3>
+  <p>One per institution. Alpha shows what it found in its own ledger. Meridian and Union show
+  what they <i>disclosed</i> &mdash; totals computed under the agreed threshold. The line
+  <i>&ldquo;we never saw a row&rdquo;</i> is literal: the initiator receives sums and counts,
+  never records.</p>
+
+  <h3>The negotiation</h3>
+  <p>The actual messages between the banks, in order. Read the arrows: <code>&rarr;</code> is
+  Alpha asking, <code>&larr;</code> is a peer answering.</p>
+  <pre>&rarr; meridian  investigation_request  round 1 · k=10 ttl=72h   <span class="muted">Alpha's opening ask</span>
+&larr; meridian  <b>counter_proposal</b>       k=25 ttl=48h          <span class="muted">too loose — Meridian counters</span>
+&larr; union     <b>counter_proposal</b>       k=15 ttl=72h          <span class="muted">Union wants 15</span>
+&rarr; meridian  investigation_request  round 2 · k=25 ttl=48h   <span class="muted">Alpha concedes to the strictest</span>
+&larr; meridian  <b>policy_verdict</b>         accept
+&larr; union     <b>policy_verdict</b>         accept
+&rarr; union     <b>concordat_signed</b>       all three countersign</pre>
+  <div class="callout"><b>The thing worth noticing:</b> Gemini wrote the wording of every one of
+  those requests, and decided none of them. The verdicts come from plain deterministic code
+  reading each bank's own policy file. No phrasing can talk a policy round &mdash; which is the
+  only arrangement a bank's risk committee would ever accept.</div>
+
+  <h3>The money flow picture</h3>
+  <p>The victim on the left, then each bank's mule accounts, then the cash-out point on the
+  right. The dotted vertical bars are the institutional boundaries. Lines crossing them are
+  <i>inferences</i> agreed under the concordat, not records that moved: no account number ever
+  crossed those bars.</p>
+
+  <h3>The audit trail</h3>
+  <p>Every action, with which agent took it. It is append-only and it is the only thing that
+  outlives the clean room. Collapsed by default because it is long &mdash; open it if you want
+  to check that the story above matches what actually happened.</p>
+
+  <h2>What you can do</h2>
+  <p>The dashboard is public and read-only except for one button, which is deliberate: the
+  approval gate exists to prove a <i>human</i> decided, so you should be able to be that human.</p>
+  <p>Open a case marked <span class="pill live">awaiting_approval</span>, scroll to
+  <b>Joint finding</b>, and press <b>Approve enforcement</b>. The case moves to
+  <code>enforcing</code>, then <code>closed</code>. Alpha freezes its own accounts, opens a
+  reimbursement claim for the victim, and files a report with the regulator &mdash; and never
+  learns the name of a single Meridian customer.</p>
+  <div class="callout"><b>Two honest caveats.</b> Approving is one-way: a closed case cannot
+  return to the gate. And if the case's agreement has expired, the gate will refuse you on
+  purpose &mdash; the finding is still true, but the permission to act on it has lapsed. The
+  strip tells you which is which before you click.</div>
+
+  <h2>Glossary</h2>
+  <dl class="glos">
+    <div>
+      <dt>Concordat</dt>
+      <dd>An agreement between parties who do not share a jurisdiction. Here: the signed terms
+      under which banks will jointly compute one answer. It names who is party to it, the
+      minimum group size, how long it lasts, and exactly which computations are permitted.</dd>
+    </div>
+    <div>
+      <dt><code>k</code> &middot; group-size threshold</dt>
+      <dd>An answer is only returned if at least <code>k</code> customers fall into the group,
+      so no individual can be singled out. The banks negotiate this number; here they settle at
+      25. It has a real cost: a ring smaller than <code>k</code> stays hidden, even from the
+      banks that agreed to look for it.</dd>
+    </div>
+    <div>
+      <dt><code>ttl</code> &middot; time to live</dt>
+      <dd>How long the agreement, and the room built from it, remain valid. After that the
+      permission lapses and enforcement is refused until the parties renegotiate.</dd>
+    </div>
+    <div>
+      <dt>Clean room</dt>
+      <dd>A temporary shared dataset built from the signed terms. Each bank's contribution
+      carries a privacy policy, so a query for an individual row is refused by BigQuery itself.
+      That refusal is not our code being careful &mdash; a bug in our code could not lift it.</dd>
+    </div>
+    <div>
+      <dt>Perimeter &middot; boundary edge</dt>
+      <dd>A perimeter is everything one bank owns: its data, its agents, its identity. A
+      boundary edge is a transaction where the money left that perimeter &mdash; the exact point
+      a solo investigation goes blind.</dd>
+    </div>
+    <div>
+      <dt>Salted hash</dt>
+      <dd>Account numbers never cross a boundary. They are scrambled with a secret unique to
+      each case, so peers can tell whether they are looking at the same account without either
+      side learning who it is &mdash; and the scrambling is worthless outside that one case.</dd>
+    </div>
+    <div>
+      <dt>Diplomat, tracer, policy engine</dt>
+      <dd>The agents inside each fleet. The tracer follows money in its own ledger; the diplomat
+      talks to other banks; the policy engine decides what may be agreed to. Only the first two
+      use a language model.</dd>
+    </div>
+    <div>
+      <dt>A2A</dt>
+      <dd>The open protocol the fleets use to talk to each other. Each bank publishes an agent
+      card describing what it can do, and messages go directly between banks with nothing in the
+      middle.</dd>
+    </div>
+  </dl>
+
+  <h2>Check it yourself</h2>
+  <p>The central claim is that a bank physically cannot read a peer's ledger. That is not a
+  promise in a document &mdash; it is enforced by Google, across account boundaries, and you can
+  watch it fail:</p>
+  <pre>sa-bank-alpha &rarr; its own ledger     : 3,743,998 rows
+sa-bank-alpha &rarr; meridian's ledger  : <b>403 Access Denied</b>
+sa-bank-alpha &rarr; union's ledger     : <b>403 Access Denied</b></pre>
+  <p>Inside a single project, all anyone can show you is that they <i>chose</i> not to grant
+  access. Across separate projects, the access does not exist to grant.</p>
+  <p class="muted">All transaction data here is synthetic, generated from a fixed seed with a
+  fraud ring planted inside it. No real customer, account or transaction appears anywhere in
+  this system.</p>
+
+  <hr class="rule" />
+  <p style="margin-top:24px"><a class="navlink" href="/">&larr; Back to mission control</a></p>
+</div>
+</body>
+</html>

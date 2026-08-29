@@ -162,4 +162,15 @@ def index() -> FileResponse:
     return FileResponse(STATIC / "index.html")
 
 
+@app.get("/guide")
+def guide() -> FileResponse:
+    """What the dashboard assumes you already know, for people who do not.
+
+    Inter-bank data collaboration is a niche with its own vocabulary — k-anonymity, clean
+    rooms, boundary edges — and someone meeting it for the first time should not have to infer
+    any of it from a dashboard.
+    """
+    return FileResponse(STATIC / "guide.html")
+
+
 app.mount("/static", StaticFiles(directory=STATIC), name="static")
