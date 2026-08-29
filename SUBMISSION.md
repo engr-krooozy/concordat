@@ -46,9 +46,34 @@ purpose is to prove a *human* decided, and that property is unchanged. All data 
 - [ ] Tech requirements visible: Gemini 3.5+ (Vertex AI), ADK + A2A, Cloud Run, Pub/Sub,
       Firestore, BigQuery
 
+## Agent-platform components (named by the judges in the live Q&A)
+
+The Fortified Enterprise Fleet Q&A said outright: *"we do prefer if you can use the agent
+registry from the agent platform inside Google Cloud… if we are picking the winner we'll
+prefer somebody that has implemented with the agent registry."* And, on what to show:
+*"just show us that you have agent runtime, memory bank, and model armor and what you're
+using them for."*
+
+- [x] **Agent registry** — Vertex AI Agent Engine holds the fleet catalog in the commons;
+      `diplomat.discover()` reads it, with our own registry service as fallback. Verified in
+      production: `discovered 2 fleets via Agent Engine: ['meridian', 'union']`
+- [x] **Memory Bank** — one per bank, in that bank's own project. Ring shapes and
+      counterparty behaviour carry across cases; only k-thresholded aggregates go in
+- [x] **Model Armor** — outbound third opinion (DLP inspect template, because basic SDP does
+      not fire on a person's name) and inbound prompt-injection screening on peer prose.
+      Verified live: injection MATCH_FOUND at HIGH confidence, ordinary proposals clean.
+      Production gate line reads `passed (rules+gemma+armor)`
+- [x] **Agent runtime** — deliberately *not* Agent Engine. Each fleet runs on Cloud Run inside
+      its own project. Say this out loud rather than hiding it: three rival banks' investigators
+      sharing one managed runtime is the exact arrangement this project argues against, and a
+      judge who notices the choice should hear the reason
+
 ## Bonus points (up to 0.6)
 
 - [x] **Gemma** integration — Gemma 3 4B in-container perimeter gate; model size chosen by a measured eval (`scripts/eval_gemma_gate.py`), which is itself worth a line in the video
+- [x] **Multimodal** — a case is opened by a customer's *voice note*; Gemini extracts the
+      account, amount and window and writes the report the tracer reads. Opens the Best
+      Multimodal category, and it is how fraud is actually reported in Nigerian retail banking
 - [x] Blog post drafted — `docs/blog-post.md` ("I taught rival banks' AI agents to negotiate
       with each other"). Publish to dev.to/Medium by Aug 29 — **needs Mustapha to post**
 - [ ] Social post with `#AllThingsAgenticHackathon` linking the blog — Aug 29
@@ -73,7 +98,7 @@ approval gates, append-only audit).
 | t | Scene | Notes |
 |---|---|---|
 | 0:00–0:25 | **Problem.** Map of a fraud ring spanning 3 banks; each bank's view fragments and greys out. VO: "The same mule ring hits five banks. Privacy law means no one sees the whole picture." | Motion graphic, no product yet |
-| 0:25–0:45 | **Claim.** "Concordat: agent fleets that negotiate joint investigations — raw data never leaves any bank." One-slide architecture (six invariants condensed to 3 bullets) | |
+| 0:25–0:45 | **Claim.** "Concordat: agent fleets that negotiate joint investigations — raw data never leaves any bank." One-slide architecture (invariants condensed to 3 bullets) | |
 | 0:45–1:15 | **Solo failure.** Mission control: Bank Alpha's fleet detects, traces 4 hops, hits the wall. Case state → `dead_end`. VO explains async: "no chat window — this ran in the background." | Live UI |
 | 1:15–2:15 | **The negotiation (the star).** A2A discovery via registry; proposal appears; Meridian's policy engine **rejects** (k too low) with the violated rule on screen; counter-proposal; all sign. VO: "Gemini drafts. Policy — deterministic code — disposes." | Live transcript feed, policy verdict badges |
 | 2:15–2:50 | **The money shot.** Clean room spins up (Cloud console flash); joint graph materializes across all three panels; the full ring lights up. Gemma redaction log ticker at the bottom. | Rehearsed to land < 30s |

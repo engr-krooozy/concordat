@@ -2,7 +2,7 @@
 
 Hackathon project (All Things Agentic, deadline Aug 31 2026, 6 PM WAT internal stop).
 Read SPEC.md before any non-trivial change; PLAN.md is the schedule; ARCHITECTURE.md holds the
-six invariants — **never write code that violates an invariant** (esp. #1 sovereignty and
+seven invariants — **never write code that violates an invariant** (esp. #1 sovereignty and
 #2 deterministic veto).
 
 ## Ground rules

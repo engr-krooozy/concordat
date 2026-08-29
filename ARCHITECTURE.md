@@ -10,6 +10,15 @@ services (registry, clean-room compiler) + one observer UI. Everything on Cloud 
 cross-agent traffic is A2A messages; all intra-case orchestration is Pub/Sub-driven and resumable
 from Firestore.
 
+Managed Google Cloud components sit at the three places where a bank would refuse to take our
+word for it. **Vertex AI Agent Engine** holds the fleet catalog in the commons — registry
+entries are public facts, so cataloging is neutral ground while execution stays sovereign.
+**Agent Engine Memory Bank** gives each bank cross-case memory *inside its own project*, so
+nothing about one bank's investigative history is legible to a rival. **Model Armor** guards
+both edges of every perimeter: a third opinion on text leaving, and prompt-injection screening
+on peer prose arriving, because a counterparty's free text is written by a rival's LLM and
+lands in the context of ours.
+
 ```mermaid
 flowchart TB
     subgraph ALPHA["Bank Alpha perimeter (SA: alpha@) — deployed 3x, one image"]
@@ -60,7 +69,7 @@ flowchart TB
     A_or & A_dip & A_enf --> GEM
 ```
 
-## The six invariants (put these on the diagram slide — they ARE the architecture)
+## The invariants (put these on the diagram slide — they ARE the architecture)
 
 1. **Sovereignty**: each bank is a **separate GCP project** with its own ledger, identity,
    topic and case store. A bank's service account does not appear in any peer's project at
@@ -72,10 +81,17 @@ flowchart TB
    exactly two services, `registry` and `mission-control`.
 2. **Deterministic veto**: Gemini drafts proposals and reports; the YAML policy evaluator (plain
    code) has final say on anything crossing the boundary. LLMs propose, policy disposes.
-3. **Perimeter gate**: every outbound free-text field passes deterministic redaction rules and
+3. **Perimeter gate**: every outbound free-text field passes deterministic redaction rules,
    then a Gemma 3 4B running *inside the bank's own container* — the text being checked for
-   leaks never leaves the bank to be checked. Rules are the guarantee; Gemma can only add a
-   restriction. Identifiers leave only as salted hashes, and only in sets of at least k.
+   leaks never leaves the process to be checked — and finally Model Armor, Google's detector
+   in the bank's own project, which catches what a regex structurally cannot (a customer's
+   name). Rules are the guarantee; the two model layers may only *add* a restriction, and the
+   audit line names only the layers that actually answered. The gate fails closed on a finding
+   and open on an outage, because a scanner being unreachable must not strand the federation.
+   Inbound is screened too: peer-authored `rationale`, `note` and computation descriptions pass
+   Model Armor's prompt-injection filter before our agents read them, and an attempt is
+   rejected as a policy violation attributable to the bank that sent it. Identifiers leave only
+   as salted hashes, and only in sets of at least k.
 4. **Ephemerality**: rooms carry the concordat's TTL. Dissolution is *cooperative*, not central:
    the room runner drops the room, and each bank revokes its own contribution view — the runner
    has no delete rights inside anyone's dataset. The audit record is the only survivor.
@@ -87,6 +103,10 @@ flowchart TB
    stranded. `case-cdbca153` stopped mid-parley on Aug 22 and resumed on Aug 27.
 6. **Auditability**: every negotiation round, policy verdict, clean-room query, and enforcement
    action is an append-only Firestore audit entry with actor + timestamp + payload hash.
+7. **Memory is sovereign too**: each fleet's cross-case memory lives in that bank's own Memory
+   Bank, in that bank's own project. Only k-thresholded aggregates go in — the shape of a
+   network, never a person — so a store that outlives the case cannot become the back door
+   through which an individual escapes the perimeter that protected them.
 
 ## Case lifecycle (state machine)
 
@@ -114,7 +134,7 @@ All messages: Pydantic-validated, transcript-persisted, replayable in the UI.
 ## Where each judging axis is won
 
 - **Innovation/utility (40%)**: the negotiation layer + federated model (see SPEC novelty ledger).
-- **Architecture (30%)**: the six invariants above; one parameterized bank image deployed 3×;
+- **Architecture (30%)**: the seven invariants above; one parameterized bank image deployed 3×;
   event-driven long-running cases.
 - **Demo/production-readiness (30%)**: IAM-proven isolation, audit trail, approval gates,
   CI/CD, deterministic `make demo`.
