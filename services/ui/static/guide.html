@@ -10,28 +10,27 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🤝</text></svg>" />
 <style>
   :root {
-    --bg: #070910; --panel: #0e1219; --raised: #151b26;
-    --line: rgba(255,255,255,.07); --line-2: rgba(255,255,255,.12);
-    --ink: #f2f5fa; --dim: #7c8799;
-    --accent: #6ea8ff; --ok: #3ecf8e; --warn: #f6c453; --bad: #ff6b6b;
-    --gold: #FFCC00; --gold-soft: rgba(255,204,0,.12); --gold-line: rgba(255,204,0,.28);
-    --alpha: #6ea8ff; --meridian: #b98bff; --union: #3ecf8e;
+    --bg: #FFFFFF; --panel: #FFFFFF; --raised: #F7F7F7;
+    --line: #ECECEC; --line-2: #DEDEDE;
+    --ink: #0D0D0D; --dim: #6B6B6B;
+    --accent: #2563EB; --ok: #12805C; --warn: #B45309; --bad: #DC2626;
+    --gold: #F5CE47; --gold-soft: #FEF7E0; --gold-line: #F3E0A0;
+    --alpha: #2563EB; --meridian: #7C3AED; --union: #059669;
     --f: "Inter", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
     font: 15px/1.68 var(--f); -webkit-font-smoothing: antialiased; }
-  body::before { content: ""; position: fixed; inset: -20% 0 auto 0; height: 560px; z-index: 0;
-    background: radial-gradient(800px 340px at 30% 0%, rgba(255,204,0,.06), transparent 70%);
-    pointer-events: none; }
+  body::before { content: ""; position: fixed; inset: 0 0 auto 0; height: 420px; z-index: 0;
+    background: linear-gradient(180deg, #FFFDF5, transparent); pointer-events: none; }
   header, .wrap { position: relative; z-index: 1; }
   header { padding: 18px 24px; border-bottom: 1px solid var(--line); display: flex;
     align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;
-    position: sticky; top: 0; background: rgba(12,15,22,.92); backdrop-filter: blur(8px); z-index: 20; }
+    position: sticky; top: 0; background: rgba(255,255,255,.9); backdrop-filter: blur(8px); z-index: 20; }
   h1 { font-size: 17px; margin: 0; font-weight: 600; letter-spacing: -.02em; }
   .tag { color: var(--dim); font-size: 13px; }
-  .navlink { color: var(--accent); text-decoration: none; font-size: 13px; font-weight: 500;
-    border: 1px solid var(--line-2); border-radius: 12px; padding: 8px 14px; white-space: nowrap;
+  .navlink { color: var(--ink); background: #fff; text-decoration: none; font-size: 13px; font-weight: 500;
+    border: 1px solid var(--line-2); border-radius: 12px; padding: 9px 16px; white-space: nowrap; font-weight: 600;
     transition: background .15s ease; }
   .navlink:hover { background: var(--raised); }
   .wrap { max-width: 860px; margin: 0 auto; padding: 8px 24px 96px; }
@@ -43,7 +42,7 @@
   h2 { font-size: 26px; margin: 56px 0 10px; letter-spacing: -.03em; font-weight: 700; }
   h3 { font-size: 16px; margin: 30px 0 8px; color: var(--ink); font-weight: 600;
     letter-spacing: -.01em; }
-  p { margin: 0 0 14px; color: #c3ccdd; }
+  p { margin: 0 0 14px; color: #3F3F3F; }
   .muted { color: var(--dim); }
   a { color: var(--accent); }
 
@@ -55,7 +54,7 @@
   .card:hover { border-color: var(--line-2); transform: translateY(-2px); }
   .card h4 { margin: 0 0 6px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
   .card p { margin: 0; font-size: 13.5px; color: var(--dim); line-height: 1.55; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+  .dot { width: 22px; height: 22px; border-radius: 7px; display: inline-block; flex: none; }
   .d-alpha { background: var(--alpha); } .d-meridian { background: var(--meridian); }
   .d-union { background: var(--union); } .d-neutral { background: var(--gold); }
 
@@ -72,28 +71,28 @@
   dl.glos > div { padding: 14px 0; border-top: 1px solid var(--line); }
   dl.glos dt { font-weight: 600; font-size: 14.5px; margin-bottom: 4px; }
   dl.glos dt code { background: #1b2233; border: 1px solid var(--line); border-radius: 4px;
-    padding: 1px 6px; font-size: 12.5px; color: var(--gold); font-weight: 400; }
+    padding: 1px 6px; font-size: 12.5px; color: #8A6D00; font-weight: 500; }
   dl.glos dd { margin: 0; color: var(--dim); font-size: 14px; line-height: 1.6; }
 
   code { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
   pre { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
     padding: 12px 14px; overflow-x: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 12.5px; line-height: 1.6; color: #c3ccdd; }
-  pre b { color: var(--gold); font-weight: 600; }
+    font-size: 12.5px; line-height: 1.6; color: #3F3F3F; }
+  pre b { color: #8A6D00; font-weight: 600; }
 
   .callout { border-left: 2px solid var(--gold); background: var(--gold-soft); padding: 14px 18px;
-    border-radius: 0 12px 12px 0; margin: 22px 0; font-size: 14.5px; color: #e8dcb4; line-height: 1.62; }
-  .callout b { color: var(--gold); }
+    border-radius: 0 12px 12px 0; margin: 22px 0; font-size: 14.5px; color: #3F3F3F; line-height: 1.62; }
+  .callout b { color: #8A6D00; }
 
   table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px; }
   th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { color: var(--dim); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
-  td code { color: var(--gold); }
+  td code { color: #8A6D00; }
 
   .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11px;
     border: 1px solid var(--line); background: #1b2233; color: var(--dim); }
-  .pill.live { color: var(--gold); border-color: #4a4020; background: #241f10; }
-  .pill.done { color: var(--ok); border-color: #1d4736; background: #10241b; }
+  .pill.live { color: #8A6D00; border-color: var(--gold-line); background: var(--gold-soft); }
+  .pill.done { color: var(--ok); border-color: #BBE7D5; background: #ECFAF4; }
 </style>
 </head>
 <body>
@@ -222,10 +221,10 @@
 &larr; meridian  <b>policy_verdict</b>         accept
 &larr; union     <b>policy_verdict</b>         accept
 &rarr; union     <b>concordat_signed</b>       all three countersign</pre>
-  <div class="callout"><b>The thing worth noticing:</b> Gemini wrote the wording of every one of
-  those requests, and decided none of them. The verdicts come from plain deterministic code
-  reading each bank's own policy file. No phrasing can talk a policy round &mdash; which is the
-  only arrangement a bank's risk committee would ever accept.</div>
+  <div class="callout"><b>The thing worth noticing:</b> the verdicts come from deterministic
+  code reading each bank's own policy file &mdash; never from a model. No phrasing of a request
+  can talk a policy round, which is the only arrangement a bank's risk committee would ever
+  accept.</div>
 
   <h3>The money flow picture</h3>
   <p>The victim on the left, then each bank's mule accounts, then the cash-out point on the
