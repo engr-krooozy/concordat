@@ -1,4 +1,4 @@
-"""Case model + state machine (ARCHITECTURE.md). Firestore persistence lands in the
+"""Case model + state machine (README.md). Firestore persistence lands in the
 async-machinery step; every mutation goes through CaseState methods so persistence is a
 drop-in.
 """

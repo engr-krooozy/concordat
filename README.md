@@ -4,11 +4,7 @@
 > investigations — then compile the agreement into an ephemeral BigQuery clean room, catch the
 > cross-bank ring, act only inside their own perimeters, and dissolve the room.
 
-Entry for the **All Things Agentic Hackathon** (Devpost, Aug 2026) — *Fortified Enterprise
-Fleet* track. Built solo, Aug 2026.
-
-**Docs:** [SPEC.md](SPEC.md) · [PLAN.md](PLAN.md) · [ARCHITECTURE.md](ARCHITECTURE.md) ·
-[SUBMISSION.md](SUBMISSION.md)
+Entry for the **All Things Agentic Hackathon** (Devpost, Aug 2026) — *Fortified Enterprise Fleet* track. Built solo, Aug 2026.
 
 ---
 
@@ -33,6 +29,86 @@ It is served as plain text so you can read it before you run it, and it is the s
 It prints the solo trace hitting the perimeter, the negotiation with both peers pushing
 back, the joint finding no bank could reach alone, and every outbound payload the perimeter
 gate screened. `make test` runs 73 tests with no cloud access at all.
+
+---
+
+## System Overview & Architecture
+
+![Concordat Architecture](docs/architecture.png)
+
+Three sovereign bank fleets (identical codebase, isolated config/IAM/data) + two shared neutral
+services (registry, clean-room compiler) + one observer UI. Everything on Cloud Run; all
+cross-agent traffic is A2A messages; all intra-case orchestration is Pub/Sub-driven and resumable
+from Firestore.
+
+Managed Google Cloud components sit at the three places where a bank would refuse to take our
+word for it:
+- **Vertex AI Agent Engine** holds the fleet catalog in the commons — registry entries are public facts, so cataloging is neutral ground while execution stays sovereign.
+- **Agent Engine Memory Bank** gives each bank cross-case memory *inside its own project*, so nothing about one bank's investigative history is legible to a rival.
+- **Model Armor** guards both edges of every perimeter: a third opinion on text leaving, and prompt-injection screening on peer prose arriving, because a counterparty's free text is written by a rival's LLM and lands in the context of ours.
+
+```mermaid
+flowchart TB
+    subgraph ALPHA["Bank Alpha perimeter (SA: alpha@) — deployed 3x, one image"]
+        A_in[Intake<br/>voice note or typed report]
+        A_or[ADK Orchestrator]
+        A_det[Detector agent]
+        A_tr[Tracer agent]
+        A_dip[Diplomat agent]
+        A_pol[Policy engine<br/>deterministic YAML evaluator]
+        A_red[Perimeter gate<br/>rules → Gemma 3 4B → Model Armor<br/>inbound: peer prose injection screen]
+        A_enf[Enforcer + Reporter<br/>idempotent · refuses expired terms]
+        A_mem[(Memory Bank<br/>cross-case, this bank only)]
+        A_bq[(BQ: bank_alpha<br/>3.74M rows)]
+        A_in --> A_det --> A_tr --> A_bq
+        A_det <-.-> A_mem
+        A_dip --> A_pol
+        A_dip --> A_red
+    end
+
+    subgraph MER["Bank Meridian perimeter (SA: meridian@)"]
+        M_fleet[Identical fleet]
+        M_bq[(BQ: bank_meridian)]
+    end
+    subgraph UNI["Bank Union perimeter (SA: union@)"]
+        U_fleet[Identical fleet]
+        U_bq[(BQ: bank_union)]
+    end
+
+    REG[Fleet catalog<br/>Vertex AI Agent Engine<br/>registry service as fallback]
+    CR[Clean-room compiler<br/>concordat → room + k-policy views<br/>+ hop chaining + dissolver]
+    ROOM[(Ephemeral room<br/>aggregation_threshold_policy<br/>raw SELECT refused by BigQuery)]
+    FS[(Firestore<br/>cases, transcripts,<br/>concordats, audit log)]
+    PS{{Pub/Sub<br/>case events}}
+    UI[Mission Control<br/>FastAPI + static, Cloud Run<br/>public, no account needed]
+    GEM[Vertex AI<br/>Gemini 3.5 Flash]
+
+    A_dip <-- "discover" --> REG
+    M_fleet <-- "A2A" --> REG
+    U_fleet <-- "A2A" --> REG
+    A_red <-- "A2A: negotiate<br/>(redacted, hashed)" --> M_fleet
+    A_red <-- "A2A: negotiate" --> U_fleet
+    A_dip -- "accepted concordat" --> CR
+    CR --> ROOM
+    A_bq -. "authorized contribution<br/>(hashed ids)" .-> ROOM
+    M_bq -.-> ROOM
+    U_bq -.-> ROOM
+    ROOM -- "joint ring graph<br/>(aggregates)" --> A_enf
+    A_or <--> PS
+    A_or <--> FS
+    UI --> FS
+    A_or & A_dip & A_enf --> GEM
+```
+
+### The Seven Architectural Invariants
+
+1. **Sovereignty**: Each bank is a **separate GCP project** (`concordat-alpha`, `concordat-meridian`, `concordat-union`) with its own ledger, identity, topic, and case store. A bank's service account does not appear in any peer's project at all, so a cross-perimeter read fails with a 403 from Google rather than a check in our code. The only route between banks is a clean room compiled from an accepted concordat. The commons holds no bank's ledger.
+2. **Deterministic veto**: Gemini drafts proposals and reports; the YAML policy evaluator (plain code) has final say on anything crossing the boundary. LLMs propose, policy disposes.
+3. **Perimeter gate**: Every outbound free-text field passes deterministic redaction rules, then a Gemma 3 4B running *inside the bank's own container* (the text being checked for leaks never leaves the process), and finally Model Armor (Google's detector in the bank's own project). Inbound peer prose passes Model Armor prompt-injection screening before our agents read it. Identifiers leave only as salted hashes in sets of at least *k*.
+4. **Ephemerality**: Clean rooms carry the concordat's TTL. Dissolution is *cooperative*, not central: the room runner drops the room, and each bank revokes its own contribution view — the runner has no delete rights inside anyone's dataset. The audit record is the only survivor.
+5. **Asynchrony**: No request/response chains across the system — Pub/Sub events + Firestore state; any service can restart mid-case and the case resumes. Resumption holds across every state transition (`RESUMABLE_FROM` in `services/bank/case.py`).
+6. **Auditability**: Every negotiation round, policy verdict, clean-room query, and enforcement action is an append-only Firestore audit entry with actor + timestamp + payload hash.
+7. **Memory is sovereign too**: Each fleet's cross-case memory lives in that bank's own Memory Bank in its own project. Only k-thresholded aggregates go in — the shape of a network, never an individual person.
 
 ---
 

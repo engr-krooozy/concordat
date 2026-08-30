@@ -1,4 +1,4 @@
-"""Negotiation protocol messages (ARCHITECTURE.md). Carried as JSON text parts inside
+"""Negotiation protocol messages (README.md). Carried as JSON text parts inside
 standard A2A Messages; every message Pydantic-validated on both ends and persisted to the
 negotiation transcript. LLMs never emit these directly — they draft *content*, code builds
 and validates the envelope (invariant #2).
