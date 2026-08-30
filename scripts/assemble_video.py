@@ -48,9 +48,10 @@ SHOTS = [
 # shot 7 runs over the three proof frames in turn
 TRIPLE = [GAL / "08-sovereignty.png", GAL / "09-privacy-floor.png", GAL / "10-injection.png"]
 
-# Shot 6 walks the Cloud Console in the order the narration names the services. Recorded by
-# scripts/record_console.py; without that footage the shot falls back to the captured gcloud
-# frame so the cut still builds.
+# Shot 6 walks the Cloud Console in the order the narration names the services. Captured by
+# scripts/record_console.py as full-resolution stills, each given a slow push in: a Console
+# page barely moves anyway, so a still with motion reads better than a video of nothing
+# happening. Without that capture the shot falls back to the gcloud frame and still builds.
 CONSOLE = ROOT / "video/assets/console"
 CONSOLE_ORDER = ["run-services", "run-logs", "pubsub", "firestore", "bigquery",
                  "agent-engine", "iam"]
@@ -151,21 +152,22 @@ def main() -> None:
         elif kind == "clip":
             clip(src, start, d, dest)
         elif kind == "console":
-            have = [CONSOLE / f"{n}.webm" for n in CONSOLE_ORDER
-                    if (CONSOLE / f"{n}.webm").exists()]
+            have = [CONSOLE / f"{n}.png" for n in CONSOLE_ORDER
+                    if (CONSOLE / f"{n}.png").exists()]
             if not have:
-                print("    no console footage yet -> using the gcloud frame instead")
+                print("    no console capture yet -> using the gcloud frame instead")
                 still(GAL / "11-projects.png", d, dest)
             else:
                 parts = []
-                for i, src2 in enumerate(have):
+                for i, img in enumerate(have):
                     q = WORK / f"{key}-{i}.mp4"
-                    clip(src2, 2.0, d / len(have), q)   # skip the Console settling in
+                    still(img, d / len(have), q, zoom=1.06)
                     parts.append(q)
                 lst2 = WORK / f"{key}.txt"
                 lst2.write_text("".join(f"file '{q}'\n" for q in parts))
                 run([FF, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst2),
                      "-c", "copy", str(dest)])
+                print(f"    console: {len(have)} of {len(CONSOLE_ORDER)} pages")
         else:                                    # three proof frames sharing one line
             parts = []
             for i, img in enumerate(TRIPLE):
