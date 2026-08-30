@@ -85,7 +85,11 @@ def capture() -> None:
 
         ctx = browser.contexts[0]
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
-        page.set_viewport_size({"width": 1920, "height": 1080})
+        # Attaching to a running browser means no device_scale_factor to set at construction,
+        # so override the metrics over CDP instead: same 1920x1080 layout, rendered at 2x.
+        cdp = ctx.new_cdp_session(page)
+        cdp.send("Emulation.setDeviceMetricsOverride",
+                 {"width": 1920, "height": 1080, "deviceScaleFactor": 2, "mobile": False})
 
         bad = []
         for name, url, why in PAGES:
@@ -109,7 +113,7 @@ def capture() -> None:
             note = ""
             if page.locator("text=/URL not found|Page not found/i").count():
                 note, _ = "  <- 404, PAGE NOT CAPTURED", bad.append(name)
-            elif (OUT / f"{name}.png").stat().st_size < 90_000:
+            elif (OUT / f"{name}.png").stat().st_size < 200_000:
                 note, _ = "  <- looks empty, check it", bad.append(name)
             print(f"  {name}.png   {why}{note}")
 

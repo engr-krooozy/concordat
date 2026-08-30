@@ -15,7 +15,11 @@ from playwright.sync_api import sync_playwright
 
 UI = "https://mission-control-fa7ntw3nkq-uc.a.run.app"
 OUT = Path(__file__).resolve().parent.parent / "video/assets/clips"
+# Render at 2x and record 4K. The page is laid out at 1920x1080 either way; the extra pixels
+# are resolution, not more content. Downscaled to the cut it makes small UI text genuinely
+# sharp, which matters when half the frames are dense text.
 W, H = 1920, 1080
+SCALE = 2
 
 # (name, seconds, what the camera does). Seconds are the cue-sheet durations, plus a little
 # handle at each end so the edit has something to trim into.
@@ -68,13 +72,15 @@ def main() -> None:
     only = sys.argv[1] if len(sys.argv) > 1 else None
 
     with sync_playwright() as pw:
-        browser = pw.chromium.launch(args=["--force-device-scale-factor=1"])
+        browser = pw.chromium.launch()
         for name, secs, kind in SHOTS:
             if only and only != name:
                 continue
             ctx = browser.new_context(viewport={"width": W, "height": H},
+                                      device_scale_factor=SCALE,
                                       record_video_dir=str(OUT),
-                                      record_video_size={"width": W, "height": H})
+                                      record_video_size={"width": W * SCALE,
+                                                         "height": H * SCALE})
             page = ctx.new_page()
             page.goto(UI, wait_until="load")
             page.wait_for_timeout(6000)          # the fleet panels fill in after first paint

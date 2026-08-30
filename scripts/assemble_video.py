@@ -64,10 +64,13 @@ CONSOLE_ORDER = ["run-services", "run-detail", "run-logs", "pubsub", "firestore"
 # name, font, size, primary, secondary, outline, back, b,i,u,s, scale x/y, spacing, angle,
 # border 3 = opaque box, outline, shadow, align 2 = bottom centre, margins l/r/v, encoding
 ASS_STYLE = ("Style: Default,Helvetica Neue,34,&H00FFFFFF,&H000000FF,&H00000000,&HB4000000,"
-             "0,0,0,0,100,100,0,0,3,1.7,0,2,120,120,54,1")
+             "0,0,0,0,100,100,0,0,3,2.2,0,2,160,160,70,1")
 
-FIT = ("scale=1920:1080:force_original_aspect_ratio=decrease,"
-       "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=white,setsar=1")
+# 1440p, not 1080p. Every source is now 2560px or wider, YouTube gives 1440p a much higher
+# bitrate ceiling than 1080p, and the dense terminal and log frames are where that shows.
+OW, OH = 2560, 1440
+FIT = (f"scale={OW}:{OH}:force_original_aspect_ratio=decrease,"
+       f"pad={OW}:{OH}:(ow-iw)/2:(oh-ih)/2:color=white,setsar=1")
 
 
 def run(args: list[str]) -> None:
@@ -87,15 +90,15 @@ def still(src: Path, seconds: float, dest: Path, zoom: float = 1.08) -> None:
     frames = int(seconds * FPS)
     run([FF, "-v", "error", "-y", "-loop", "1", "-i", str(src),
          "-vf", (f"{FIT},zoompan=z='min(1+({zoom}-1)*on/{frames},{zoom})'"
-                 f":d={frames}:s=1920x1080:fps={FPS},format=yuv420p"),
+                 f":d={frames}:s={OW}x{OH}:fps={FPS},format=yuv420p"),
          "-t", f"{seconds}", "-r", str(FPS), "-c:v", "libx264", "-preset", "medium",
-         "-crf", "18", str(dest)])
+         "-crf", "14", str(dest)])
 
 
 def clip(src: Path, start: float, seconds: float, dest: Path) -> None:
     run([FF, "-v", "error", "-y", "-ss", str(start), "-i", str(src), "-t", f"{seconds}",
          "-vf", f"{FIT},format=yuv420p", "-r", str(FPS),
-         "-c:v", "libx264", "-preset", "medium", "-crf", "18", str(dest)])
+         "-c:v", "libx264", "-preset", "medium", "-crf", "14", str(dest)])
 
 
 def srt_time(t: float) -> str:
@@ -221,16 +224,17 @@ def main() -> None:
     # ffmpeg writes the .ass with a 384x288 canvas, so every size in it gets scaled by 3.75
     # on a 1080p frame. Pin the canvas to the real frame first, then the style is literal.
     a_txt = ass.read_text()
-    a_txt = re.sub(r"^PlayResX:.*$", "PlayResX: 1920", a_txt, flags=re.MULTILINE)
-    a_txt = re.sub(r"^PlayResY:.*$", "PlayResY: 1080", a_txt, flags=re.MULTILINE)
+    a_txt = re.sub(r"^PlayResX:.*$", "PlayResX: 2560", a_txt, flags=re.MULTILINE)
+    a_txt = re.sub(r"^PlayResY:.*$", "PlayResY: 1440", a_txt, flags=re.MULTILINE)
     if "PlayResX" not in a_txt:
-        a_txt = a_txt.replace("[Script Info]", "[Script Info]\nPlayResX: 1920\nPlayResY: 1080")
+        a_txt = a_txt.replace("[Script Info]", "[Script Info]\nPlayResX: 2560\nPlayResY: 1440")
     ass.write_text(re.sub(r"^Style: Default,.*$", ASS_STYLE, a_txt, flags=re.MULTILINE))
 
     run([FF, "-v", "error", "-y", "-i", str(silent), "-i", str(mixed),
          "-vf", f"ass={ass}", "-map", "0:v", "-map", "1:a",
-         "-c:v", "libx264", "-preset", "slow", "-crf", "19", "-pix_fmt", "yuv420p",
-         "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(OUT)])
+         "-c:v", "libx264", "-preset", "slow", "-crf", "16", "-pix_fmt", "yuv420p",
+         "-c:a", "aac", "-b:a", "320k", "-movflags", "+faststart",
+         "-maxrate", "24M", "-bufsize", "48M", str(OUT)])
     print(f"\n{OUT}  {dur(OUT):.1f}s  {OUT.stat().st_size/1e6:.1f} MB")
     print(f"{srt}  (sidecar subtitles; also burned in via libass)")
 
