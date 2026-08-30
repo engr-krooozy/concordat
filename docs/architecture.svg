@@ -59,6 +59,10 @@
   <rect x="600" y="246" width="400" height="52" rx="8" fill="#241f10" stroke="#ffd479"/>
   <text x="612" y="266" fill="#ffd479" font-size="13" font-weight="bold">Policy engine — the strict one</text>
   <text x="612" y="284" fill="#c9b27a" font-size="11">k ≥ 25, TTL ≤ 48h  →  forces the counter-offer</text>
+  <rect x="600" y="312" width="400" height="52" rx="8" fill="#1a2133" stroke="#2b3350"/>
+  <text x="612" y="332" fill="#e8ecf5" font-size="13">Perimeter gate · Enforcer · Memory Bank</text>
+  <text x="612" y="350" fill="#8b96ad" font-size="11">screens Alpha's prose on the way in, before its agents read it</text>
+
   <rect x="600" y="378" width="400" height="52" rx="8" fill="#170f26" stroke="#6a4f9e"/>
   <text x="612" y="398" fill="#cbb2ff" font-size="13">BigQuery · bank_meridian</text>
   <text x="612" y="416" fill="#8b96ad" font-size="11">3.7M rows · invisible to Alpha and Union</text>
@@ -73,6 +77,10 @@
   <rect x="1128" y="246" width="400" height="52" rx="8" fill="#241f10" stroke="#ffd479"/>
   <text x="1140" y="266" fill="#ffd479" font-size="13" font-weight="bold">Policy engine</text>
   <text x="1140" y="284" fill="#c9b27a" font-size="11">k ≥ 15, TTL ≤ 72h</text>
+  <rect x="1128" y="312" width="400" height="52" rx="8" fill="#1a2133" stroke="#2b3350"/>
+  <text x="1140" y="332" fill="#e8ecf5" font-size="13">Perimeter gate · Enforcer · Memory Bank</text>
+  <text x="1140" y="350" fill="#8b96ad" font-size="11">answers under the agreed threshold, then revokes its own view</text>
+
   <rect x="1128" y="378" width="400" height="52" rx="8" fill="#0f2018" stroke="#2e7d5b"/>
   <text x="1140" y="398" fill="#93e6c0" font-size="13">BigQuery · bank_union</text>
   <text x="1140" y="416" fill="#8b96ad" font-size="11">3.7M rows · sovereign</text>
@@ -126,14 +134,14 @@
   <text x="72" y="850" fill="#8b96ad" font-size="12">Any service can die mid-case; the next event resumes it from Firestore.</text>
 
   <!-- ============ OUTCOME ============ -->
-  <rect x="52" y="874" width="1000" height="94" rx="12" fill="#241f10" stroke="#ffd479" stroke-width="2"/>
-  <text x="72" y="906" fill="#ffd479" font-size="15" font-weight="bold">The finding no single bank could reach</text>
-  <text x="72" y="930" fill="#e8ecf5" font-size="13">30 mule accounts across Alpha → Meridian → Union · NGN 2,316,720 concentrated at one cash-out cluster</text>
-  <text x="72" y="950" fill="#8b96ad" font-size="11.5">Revealed only because the ring is larger than the privacy floor the banks agreed to. Smaller groups stay hidden.</text>
+  <rect x="52" y="868" width="1000" height="104" rx="12" fill="#241f10" stroke="#ffd479" stroke-width="2"/>
+  <text x="72" y="900" fill="#ffd479" font-size="15" font-weight="bold">The finding no single bank could reach</text>
+  <text x="72" y="924" fill="#e8ecf5" font-size="13">30 mule accounts across Alpha → Meridian → Union · NGN 2,316,720 concentrated at one cash-out cluster</text>
+  <text x="72" y="944" fill="#8b96ad" font-size="11.5">Revealed only because the ring is larger than the privacy floor the banks agreed to. Smaller groups stay hidden.</text>
 
-  <rect x="1076" y="874" width="472" height="94" rx="12" fill="#111726" stroke="#3ecf8e" stroke-width="2"/>
-  <text x="1096" y="906" fill="#3ecf8e" font-size="15" font-weight="bold">Then, and only then, a human</text>
-  <text x="1096" y="930" fill="#e8ecf5" font-size="13">Analyst approves · Alpha freezes 30 of its own accounts</text>
-  <text x="1096" y="947" fill="#8b96ad" font-size="11">No agent acts across a boundary. No peer's customer is ever named.</text>
-  <text x="1096" y="962" fill="#8b96ad" font-size="11">Approve after the concordat's TTL lapses and the gate refuses you.</text>
+  <rect x="1076" y="868" width="472" height="104" rx="12" fill="#111726" stroke="#3ecf8e" stroke-width="2"/>
+  <text x="1096" y="900" fill="#3ecf8e" font-size="15" font-weight="bold">Then, and only then, a human</text>
+  <text x="1096" y="924" fill="#e8ecf5" font-size="13">Analyst approves · Alpha freezes 30 of its own accounts</text>
+  <text x="1096" y="941" fill="#8b96ad" font-size="11">No agent acts across a boundary. No peer's customer is ever named.</text>
+  <text x="1096" y="957" fill="#8b96ad" font-size="11">Approve after the concordat's TTL lapses and the gate refuses you.</text>
 </svg>
