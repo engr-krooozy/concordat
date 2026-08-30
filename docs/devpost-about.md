@@ -1,3 +1,5 @@
+## Inspiration
+
 A customer calls her bank. Two point four million naira left her account yesterday afternoon
 through a transfer she never made.
 
@@ -13,8 +15,6 @@ for one enormous one.
 
 I wanted to know whether agents could do a third thing. Not share the data. Not give up.
 **Negotiate.**
-
----
 
 ## What it does
 
@@ -61,39 +61,12 @@ approved. Alpha froze thirty of *its own* accounts, opened a reimbursement claim
 victim, and filed a report with the regulator — and never learned the name of a single
 Meridian customer.
 
----
-
-## The two claims I can prove
-
-Both are answered by Google rather than by my code, which is the entire point.
-
-**Sovereignty is a 403.** Each bank runs in its own GCP project, under its own service
-account, beside its own ledger. Running as Bank Alpha's identity:
+None of that rests on trusting me. Running as Bank Alpha's own identity, against a peer:
 
 ```
 sa-bank-alpha → its own ledger     : 3,743,998 rows
 sa-bank-alpha → meridian's ledger  : 403 Access Denied
-sa-bank-alpha → union's ledger     : 403 Access Denied
 ```
-
-I built this in one project first, and it worked. But inside one project all you can ever
-show is that you *chose* not to grant access, and a reviewer has to trust your IAM hygiene.
-Federating cost a day and changed the sentence entirely: across projects, the access does not
-exist to grant.
-
-**The privacy floor is not mine to lift.**
-
-```
-SELECT account_hash FROM bank_meridian.contribution_<digest> LIMIT 5
-
-400 You must use SELECT WITH AGGREGATION_THRESHOLD for this query
-    because a privacy policy has been set by a data owner.
-```
-
-That refusal comes from BigQuery. A bug in my code cannot lift it. That is a categorically
-different claim from "our service is careful with your data".
-
----
 
 ## How I built it
 
@@ -121,13 +94,15 @@ Four managed components sit where a bank would refuse to take my word for someth
   model that never calls a cloud API, deliberately: asking a hosted model "is this text safe to
   send?" requires sending it first.
 
+Each bank is a genuinely separate Google Cloud project, with its own identity, ledger, event
+topic and case store. That is not tidiness. It is the only arrangement in which the central
+claim can be checked by someone who does not trust me.
+
 All data is synthetic, generated locally from a fixed seed with a cross-bank mule network
 planted inside it. A system whose purpose is to avoid pooling customer data should not begin
 by pooling customer data.
 
----
-
-## Six times I was wrong
+## Challenges I ran into
 
 The happy path taught me nothing. These did.
 
@@ -146,7 +121,7 @@ at load time if they are incoherent.
 scored 8/16 and Gemma 1B scored 8/16 — which looks like 50% until you notice the first answers
 "LEAK" to everything and the second answers "SAFE" to everything. Both are degenerate; the
 balanced set flatters them. Gemma 4B scored 16/16 with zero false alarms. The eval is in the
-repo because the model choice should be defended by measurement, not intuition.
+repo because a model choice should be defended by measurement, not intuition.
 
 **A two-second network blip stranded three cases forever.** A peer had scaled to zero, an
 agent-card fetch got a 500, and the handler died — *after* the case status had advanced and been
@@ -169,7 +144,36 @@ passed. It failed anyway, at the deterministic evaluator, which reads the intege
 care what the prose claims. Showing only the two it catches would have been a nicer slide and a
 much weaker claim.
 
----
+## Accomplishments that I'm proud of
+
+Two claims in this project can be checked by someone who does not trust me, and both are
+answered by Google rather than by my code.
+
+**Sovereignty is a 403.** Each bank runs in its own GCP project, under its own service account,
+beside its own ledger:
+
+```
+sa-bank-alpha → its own ledger     : 3,743,998 rows
+sa-bank-alpha → meridian's ledger  : 403 Access Denied
+sa-bank-alpha → union's ledger     : 403 Access Denied
+```
+
+I built this in one project first, and it worked. But inside one project all you can ever show
+is that you *chose* not to grant access, and a reviewer has to trust your IAM hygiene.
+Federating cost a day and changed the sentence entirely: across projects, the access does not
+exist to grant.
+
+**The privacy floor is not mine to lift.**
+
+```
+SELECT account_hash FROM bank_meridian.contribution_<digest> LIMIT 5
+
+400 You must use SELECT WITH AGGREGATION_THRESHOLD for this query
+    because a privacy policy has been set by a data owner.
+```
+
+That refusal comes from BigQuery. A bug in my code cannot lift it. That is a categorically
+different claim from "our service is careful with your data".
 
 ## What I learned
 
@@ -189,21 +193,18 @@ Dockerfile pinning its own dependency list, so a library added to `pyproject.tom
 absent at runtime — passing every test locally, unavailable in production. Nothing errored. For a
 system meant to run unattended, "nothing is alerting" is not evidence of anything.
 
----
-
-## What's next
+## What's next for Concordat
 
 Real counterparties. The four projects here are separate in every way a machine can check —
 identity, data, IAM, deployment — but they share one owner, and the interesting version has four
-legal entities and four sets of lawyers. After that: private set intersection in place of the
-per-case salt, so peers need not trust a shared secret at all; and a protocol rich enough to
-bargain over the *shape* of a computation rather than only its thresholds.
+legal entities and four sets of lawyers.
 
----
+After that: private set intersection in place of the per-case salt, so peers need not trust a
+shared secret at all; and a negotiation protocol rich enough to bargain over the *shape* of a
+computation rather than only its thresholds.
 
-## An honest note on novelty
-
-A2A exists. BigQuery clean rooms exist. Central fraud consortia exist. What I could not find
-anywhere is the layer between them: **agents from different institutions negotiating the terms of
-a collaboration, compiling the agreement into ephemeral infrastructure, and dissolving it
+One honest note on novelty, because it matters more than a bigger claim would. A2A exists.
+BigQuery clean rooms exist. Central fraud consortia exist. What I could not find anywhere is the
+layer between them: **agents from different institutions negotiating the terms of a
+collaboration, compiling the agreement into ephemeral infrastructure, and dissolving it
 afterwards.** That layer is what Concordat is. I am claiming that, and only that.
