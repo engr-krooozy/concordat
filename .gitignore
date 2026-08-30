@@ -16,3 +16,6 @@ data/generator/output/
 models/
 *.gguf
 docs/ui/
+# submission images: regenerable, and 4MB of PNG has no business in the repo
+docs/gallery/*.png
+docs/gallery/_raw/
