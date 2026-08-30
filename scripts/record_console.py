@@ -32,11 +32,18 @@ PORT = 9222
 C = "https://console.cloud.google.com"
 
 # Each page is a service the project genuinely uses and the narration names out loud.
+# Logs go through Logs Explorer rather than the Cloud Run logs tab: that tab's URL 404s, and
+# Logs Explorer shows actual log lines, which is what the rules ask to see.
+LOGS_Q = ('resource.type%3D%22cloud_run_revision%22%0A'
+          'resource.labels.service_name%3D%22bank-alpha%22')
+
 PAGES = [
     ("run-services", f"{C}/run?project=concordat-alpha",
      "Cloud Run: three fleet services, each under its own identity"),
-    ("run-logs", f"{C}/run/detail/us-central1/bank-alpha/logs?project=concordat-alpha",
-     "Cloud Run logs: the fleet talking, live"),
+    ("run-detail", f"{C}/run/detail/us-central1/bank-alpha/metrics?project=concordat-alpha",
+     "bank-alpha: the service itself, deployed and serving"),
+    ("run-logs", f"{C}/logs/query;query={LOGS_Q};duration=P7D?project=concordat-alpha",
+     "Logs Explorer: the fleet talking, live"),
     ("pubsub", f"{C}/cloudpubsub/topic/list?project=concordat-alpha",
      "Pub/Sub: every state transition is an event"),
     ("firestore", f"{C}/firestore/databases/-default-/data?project=concordat-alpha",
@@ -80,17 +87,34 @@ def capture() -> None:
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
         page.set_viewport_size({"width": 1920, "height": 1080})
 
+        bad = []
         for name, url, why in PAGES:
             page.goto(url, wait_until="domcontentloaded", timeout=90000)
-            for _ in range(30):                       # the Console fills in long after DOM ready
+            if page.locator("text=/Sign in|Choose an account/i").count():
+                raise SystemExit("Chrome is not signed in. Sign in, then re-run.")
+
+            # The Console renders its shell immediately and fills in much later, so waiting for
+            # the DOM proves nothing. Wait for the spinners to go instead, then settle.
+            for _ in range(40):
                 time.sleep(1)
-                if page.locator("text=/Sign in|Choose an account/i").count():
-                    raise SystemExit("Chrome is not signed in. Sign in, then re-run.")
-                if page.locator("main, [role=main]").count():
+                spinners = page.locator(
+                    "[role=progressbar], .mat-progress-spinner, .loading-spinner").count()
+                if not spinners:
                     break
-            time.sleep(6)
+            time.sleep(9)
             page.screenshot(path=str(OUT / f"{name}.png"), scale="device")
-            print(f"  {name}.png   {why}")
+
+            # A 404 or an empty frame is still a screenshot, so say so rather than let it
+            # reach the cut unnoticed.
+            note = ""
+            if page.locator("text=/URL not found|Page not found/i").count():
+                note, _ = "  <- 404, PAGE NOT CAPTURED", bad.append(name)
+            elif (OUT / f"{name}.png").stat().st_size < 90_000:
+                note, _ = "  <- looks empty, check it", bad.append(name)
+            print(f"  {name}.png   {why}{note}")
+
+        if bad:
+            print("\nThese need attention: " + ", ".join(bad))
         browser.close()
     print(f"\n{len(PAGES)} frames in {OUT}")
     print("Now rebuild:  .venv/bin/python scripts/assemble_video.py")

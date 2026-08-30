@@ -53,8 +53,8 @@ TRIPLE = [GAL / "08-sovereignty.png", GAL / "09-privacy-floor.png", GAL / "10-in
 # page barely moves anyway, so a still with motion reads better than a video of nothing
 # happening. Without that capture the shot falls back to the gcloud frame and still builds.
 CONSOLE = ROOT / "video/assets/console"
-CONSOLE_ORDER = ["run-services", "run-logs", "pubsub", "firestore", "bigquery",
-                 "agent-engine", "iam"]
+CONSOLE_ORDER = ["run-services", "run-detail", "run-logs", "pubsub", "firestore",
+                 "bigquery", "agent-engine", "iam"]
 
 # This ffmpeg has neither libass nor libfreetype, so there is no subtitles, ass or drawtext
 # filter to burn with. Pillow draws each caption to a transparent PNG instead and overlay
