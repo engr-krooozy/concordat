@@ -118,8 +118,7 @@ make demo          # reset state + trigger the golden-path demo scenario end to 
 
 ```
 concordat/
-  SPEC.md PLAN.md ARCHITECTURE.md SUBMISSION.md CLAUDE.md
-  .claude/skills/            → project skills (demo-day, synthetic-ledger)
+  SPEC.md PLAN.md ARCHITECTURE.md SUBMISSION.md
   services/
     bank/                    → ONE parameterized bank service (deployed 3× with different config)
       agents/                → ADK agents: detector, tracer, diplomat, policy_engine,

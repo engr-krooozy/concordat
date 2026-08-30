@@ -46,7 +46,9 @@ def glide(page, to: int, ms: int) -> None:
                window.scrollTo(0, from + (to - from) * ease(p));
                p < 1 ? requestAnimationFrame(step) : done();
              })(t0);
-           })""", [to, ms])
+           })""",
+        [to, ms],
+    )
 
 
 def move(page, kind: str, secs: int) -> None:
@@ -79,15 +81,17 @@ def main() -> None:
         for name, secs, kind in SHOTS:
             if only and only != name:
                 continue
-            ctx = browser.new_context(viewport={"width": W, "height": H},
-                                      record_video_dir=str(OUT),
-                                      record_video_size={"width": W, "height": H})
+            ctx = browser.new_context(
+                viewport={"width": W, "height": H},
+                record_video_dir=str(OUT),
+                record_video_size={"width": W, "height": H},
+            )
             page = ctx.new_page()
             page.goto(UI, wait_until="load")
             page.evaluate(f"document.documentElement.style.zoom = '{ZOOM}'")
-            page.wait_for_timeout(6000)          # the fleet panels fill in after first paint
+            page.wait_for_timeout(6000)  # the fleet panels fill in after first paint
             move(page, kind, secs)
-            ctx.close()                           # flushes the webm
+            ctx.close()  # flushes the webm
             src = max(OUT.glob("*.webm"), key=lambda p: p.stat().st_mtime)
             src.rename(OUT / f"{name}.webm")
             print(f"  {name}.webm  {secs}s")

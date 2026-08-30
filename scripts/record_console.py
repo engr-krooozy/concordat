@@ -34,26 +34,51 @@ C = "https://console.cloud.google.com"
 # Each page is a service the project genuinely uses and the narration names out loud.
 # Logs go through Logs Explorer rather than the Cloud Run logs tab: that tab's URL 404s, and
 # Logs Explorer shows actual log lines, which is what the rules ask to see.
-LOGS_Q = ('resource.type%3D%22cloud_run_revision%22%0A'
-          'resource.labels.service_name%3D%22bank-alpha%22')
+LOGS_Q = (
+    "resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22bank-alpha%22"
+)
 
 PAGES = [
-    ("run-services", f"{C}/run?project=concordat-alpha",
-     "Cloud Run: three fleet services, each under its own identity"),
-    ("run-detail", f"{C}/run/detail/us-central1/bank-alpha/metrics?project=concordat-alpha",
-     "bank-alpha: the service itself, deployed and serving"),
-    ("run-logs", f"{C}/logs/query;query={LOGS_Q};duration=P7D?project=concordat-alpha",
-     "Logs Explorer: the fleet talking, live"),
-    ("pubsub", f"{C}/cloudpubsub/topic/list?project=concordat-alpha",
-     "Pub/Sub: every state transition is an event"),
-    ("firestore", f"{C}/firestore/databases/-default-/data?project=concordat-alpha",
-     "Firestore: case state, so a service can die mid-case"),
-    ("bigquery", f"{C}/bigquery?project=concordat-alpha",
-     "BigQuery: three isolated ledgers and the clean room"),
-    ("agent-engine", f"{C}/vertex-ai/agents/agent-engines?project=concordat-hack",
-     "Vertex AI Agent Engine: the catalog, on neutral ground"),
-    ("iam", f"{C}/iam-admin/serviceaccounts?project=concordat-alpha",
-     "One service account per bank: where the 403 comes from"),
+    (
+        "run-services",
+        f"{C}/run?project=concordat-alpha",
+        "Cloud Run: three fleet services, each under its own identity",
+    ),
+    (
+        "run-detail",
+        f"{C}/run/detail/us-central1/bank-alpha/metrics?project=concordat-alpha",
+        "bank-alpha: the service itself, deployed and serving",
+    ),
+    (
+        "run-logs",
+        f"{C}/logs/query;query={LOGS_Q};duration=P7D?project=concordat-alpha",
+        "Logs Explorer: the fleet talking, live",
+    ),
+    (
+        "pubsub",
+        f"{C}/cloudpubsub/topic/list?project=concordat-alpha",
+        "Pub/Sub: every state transition is an event",
+    ),
+    (
+        "firestore",
+        f"{C}/firestore/databases/-default-/data?project=concordat-alpha",
+        "Firestore: case state, so a service can die mid-case",
+    ),
+    (
+        "bigquery",
+        f"{C}/bigquery?project=concordat-alpha",
+        "BigQuery: three isolated ledgers and the clean room",
+    ),
+    (
+        "agent-engine",
+        f"{C}/vertex-ai/agents/agent-engines?project=concordat-hack",
+        "Vertex AI Agent Engine: the catalog, on neutral ground",
+    ),
+    (
+        "iam",
+        f"{C}/iam-admin/serviceaccounts?project=concordat-alpha",
+        "One service account per bank: where the 403 comes from",
+    ),
 ]
 
 
@@ -61,10 +86,17 @@ def open_browser() -> None:
     """Ordinary Chrome, no automation flags, so Google treats the sign-in as a real one."""
     PROFILE.mkdir(parents=True, exist_ok=True)
     subprocess.Popen(
-        [CHROME, f"--remote-debugging-port={PORT}", f"--user-data-dir={PROFILE}",
-         "--no-first-run", "--no-default-browser-check",
-         f"{C}/run?project=concordat-alpha"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        [
+            CHROME,
+            f"--remote-debugging-port={PORT}",
+            f"--user-data-dir={PROFILE}",
+            "--no-first-run",
+            "--no-default-browser-check",
+            f"{C}/run?project=concordat-alpha",
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
     print("\nChrome is opening. In that window:")
     print("  1. sign in as adekunlemustapha2001@gmail.com")
     print("  2. wait until you can see the bank-alpha service on the Cloud Run page")
@@ -77,19 +109,22 @@ def capture() -> None:
     with sync_playwright() as pw:
         try:
             browser = pw.chromium.connect_over_cdp(f"http://localhost:{PORT}")
-        except Exception as exc:                      # noqa: BLE001 - message matters more
+        except Exception as exc:  # noqa: BLE001 - message matters more
             raise SystemExit(
                 f"Could not attach to Chrome on port {PORT}: {exc}\n"
                 "Run this first, and leave that Chrome window open:\n"
-                "  .venv/bin/python scripts/record_console.py open") from None
+                "  .venv/bin/python scripts/record_console.py open"
+            ) from None
 
         ctx = browser.contexts[0]
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
         # Attaching to a running browser means no device_scale_factor to set at construction,
         # so override the metrics over CDP instead: same 1920x1080 layout, rendered at 2x.
         cdp = ctx.new_cdp_session(page)
-        cdp.send("Emulation.setDeviceMetricsOverride",
-                 {"width": 1920, "height": 1080, "deviceScaleFactor": 2, "mobile": False})
+        cdp.send(
+            "Emulation.setDeviceMetricsOverride",
+            {"width": 1920, "height": 1080, "deviceScaleFactor": 2, "mobile": False},
+        )
 
         bad = []
         for name, url, why in PAGES:
@@ -102,7 +137,8 @@ def capture() -> None:
             for _ in range(40):
                 time.sleep(1)
                 spinners = page.locator(
-                    "[role=progressbar], .mat-progress-spinner, .loading-spinner").count()
+                    "[role=progressbar], .mat-progress-spinner, .loading-spinner"
+                ).count()
                 if not spinners:
                     break
             time.sleep(9)

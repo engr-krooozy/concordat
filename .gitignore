@@ -25,3 +25,8 @@ video/assets/
 video/*.mp4
 video/.chrome-profile/
 video/assets/
+
+# assistant / local dev artifacts
+.claude/
+CLAUDE.md
+

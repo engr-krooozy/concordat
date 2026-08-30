@@ -37,35 +37,56 @@ BASE = f"https://{REGION}-aiplatform.googleapis.com/v1/projects/{PROJECT}/locati
 # Deliberately no product, no screens, no bank logos. Anything a judge might mistake for the
 # real UI has to be the real UI.
 COLD_OPEN = [
-    ("cold-open-1",
-     ("Handheld documentary shot, early morning in Lagos Nigeria. A woman in her "
-     "thirties stands on a busy street holding a phone to her ear, her face falling as she "
-     "listens. Warm low sun, shallow depth of field, muted colour grade. No text, no logos, "
-     "no screens. Cinematic, 35mm.")),
-    ("cold-open-2",
-     ("Slow push in on a phone screen held in a woman's hand showing an abstract "
-     "banking notification, deliberately blurred and unreadable, no brand marks. Morning light, "
-     "shallow focus, documentary style. No legible text.")),
-    ("cold-open-3",
-     ("Wide static shot of a quiet modern bank hall interior at opening time, "
-     "empty chairs, soft daylight through tall windows, no signage, no logos, no people's faces. "
-     "Cool neutral grade, still and institutional. Cinematic.")),
+    (
+        "cold-open-1",
+        (
+            "Handheld documentary shot, early morning in Lagos Nigeria. A woman in her "
+            "thirties stands on a busy street holding a phone to her ear, her face falling as she "
+            "listens. Warm low sun, shallow depth of field, muted colour grade. No text, no logos, "
+            "no screens. Cinematic, 35mm."
+        ),
+    ),
+    (
+        "cold-open-2",
+        (
+            "Slow push in on a phone screen held in a woman's hand showing an abstract "
+            "banking notification, deliberately blurred and unreadable, no brand marks. Morning light, "
+            "shallow focus, documentary style. No legible text."
+        ),
+    ),
+    (
+        "cold-open-3",
+        (
+            "Wide static shot of a quiet modern bank hall interior at opening time, "
+            "empty chairs, soft daylight through tall windows, no signage, no logos, no people's faces. "
+            "Cool neutral grade, still and institutional. Cinematic."
+        ),
+    ),
 ]
 
 SCORE = [
-    ("score-tension",
-     ("Sparse tense electronic underscore, low synth pulse, minimal percussion, "
-     "restrained and unresolved, documentary thriller. No melody in the foreground, nothing "
-     "triumphant. Steady 90 bpm.")),
-    ("score-resolve",
-     ("Calm warm ambient electronic instrumental, soft synthesizer pads and a gentle "
-      "arpeggio, steady and understated, sits quietly under a speaking voice. 90 bpm.")),
+    (
+        "score-tension",
+        (
+            "Sparse tense electronic underscore, low synth pulse, minimal percussion, "
+            "restrained and unresolved, documentary thriller. No melody in the foreground, nothing "
+            "triumphant. Steady 90 bpm."
+        ),
+    ),
+    (
+        "score-resolve",
+        (
+            "Calm warm ambient electronic instrumental, soft synthesizer pads and a gentle "
+            "arpeggio, steady and understated, sits quietly under a speaking voice. 90 bpm."
+        ),
+    ),
 ]
 
 
 def token() -> str:
-    return subprocess.run(["gcloud", "auth", "print-access-token"],
-                          capture_output=True, text=True, check=True).stdout.strip()
+    return subprocess.run(
+        ["gcloud", "auth", "print-access-token"], capture_output=True, text=True, check=True
+    ).stdout.strip()
 
 
 def headers() -> dict[str, str]:
@@ -80,11 +101,19 @@ def veo(name: str, prompt: str) -> None:
         return
     r = requests.post(
         f"{BASE}/publishers/google/models/veo-3.0-generate-001:predictLongRunning",
-        headers=headers(), timeout=60,
-        json={"instances": [{"prompt": prompt}],
-              "parameters": {"aspectRatio": "16:9", "sampleCount": 1,
-                             "durationSeconds": 8, "generateAudio": False,
-                             "storageUri": f"{BUCKET}/{name}/"}})
+        headers=headers(),
+        timeout=60,
+        json={
+            "instances": [{"prompt": prompt}],
+            "parameters": {
+                "aspectRatio": "16:9",
+                "sampleCount": 1,
+                "durationSeconds": 8,
+                "generateAudio": False,
+                "storageUri": f"{BUCKET}/{name}/",
+            },
+        },
+    )
     if r.status_code != 200:
         print(f"  {name}: {r.status_code} {r.text[:200]}")
         return
@@ -93,12 +122,16 @@ def veo(name: str, prompt: str) -> None:
     for _ in range(60):
         time.sleep(10)
         print(".", end="", flush=True)
-        p = requests.post(f"{BASE}/publishers/google/models/veo-3.0-generate-001:fetchPredictOperation",
-                          headers=headers(), json={"operationName": op}, timeout=60).json()
+        p = requests.post(
+            f"{BASE}/publishers/google/models/veo-3.0-generate-001:fetchPredictOperation",
+            headers=headers(),
+            json={"operationName": op},
+            timeout=60,
+        ).json()
         if p.get("done"):
             err = p.get("error")
             if err:
-                print(f" failed: {err.get('message','')[:160]}")
+                print(f" failed: {err.get('message', '')[:160]}")
                 return
             vids = p.get("response", {}).get("videos", [])
             if not vids:
@@ -116,11 +149,15 @@ def lyria(name: str, prompt: str) -> None:
     if dest.exists():
         print(f"  {name}.wav already there, skipping")
         return
-    r = requests.post(f"{BASE}/publishers/google/models/lyria-002:predict",
-                      headers=headers(), timeout=300,
-                      json={"instances": [{"prompt": prompt,
-                                           "negative_prompt": "vocals, singing, lyrics"}],
-                            "parameters": {"sample_count": 1}})
+    r = requests.post(
+        f"{BASE}/publishers/google/models/lyria-002:predict",
+        headers=headers(),
+        timeout=300,
+        json={
+            "instances": [{"prompt": prompt, "negative_prompt": "vocals, singing, lyrics"}],
+            "parameters": {"sample_count": 1},
+        },
+    )
     if r.status_code != 200:
         print(f"  {name}: {r.status_code} {r.text[:200]}")
         return
@@ -137,13 +174,17 @@ def narration_blocks() -> list[tuple[str, str]]:
     """Pull the quoted narration out of the shooting script, so the two never drift apart."""
     text = SCRIPT.read_text()
     blocks = []
-    for m in re.finditer(r"^### (\d)\. ([^\n(]+).*?\n(.*?)(?=^### |\Z)", text, re.DOTALL | re.MULTILINE):
-        spoken = " ".join(ln.lstrip("> ").strip()
-                          for ln in m.group(3).splitlines() if ln.startswith(">"))
+    for m in re.finditer(
+        r"^### (\d)\. ([^\n(]+).*?\n(.*?)(?=^### |\Z)", text, re.DOTALL | re.MULTILINE
+    ):
+        spoken = " ".join(
+            ln.lstrip("> ").strip() for ln in m.group(3).splitlines() if ln.startswith(">")
+        )
         spoken = re.sub(r"\s+", " ", spoken).strip()
         if spoken:
-            blocks.append((f"vo-{m.group(1)}-{m.group(2).strip().lower().replace(' ', '-')}",
-                           spoken))
+            blocks.append(
+                (f"vo-{m.group(1)}-{m.group(2).strip().lower().replace(' ', '-')}", spoken)
+            )
     return blocks
 
 
@@ -159,17 +200,24 @@ def narrate(name: str, text: str) -> None:
         return
     r = requests.post(
         "https://texttospeech.googleapis.com/v1/text:synthesize",
-        headers={**headers(), "x-goog-user-project": PROJECT}, timeout=180,
-        json={"input": {"text": text},
-              "voice": {"languageCode": "en-GB", "name": "Charon",
-                        "model_name": "gemini-2.5-flash-tts"},
-              "audioConfig": {"audioEncoding": "MP3", "speakingRate": 1.13}})
+        headers={**headers(), "x-goog-user-project": PROJECT},
+        timeout=180,
+        json={
+            "input": {"text": text},
+            "voice": {
+                "languageCode": "en-GB",
+                "name": "Charon",
+                "model_name": "gemini-2.5-flash-tts",
+            },
+            "audioConfig": {"audioEncoding": "MP3", "speakingRate": 1.13},
+        },
+    )
     payload = r.json()
     if "audioContent" not in payload:
         print(f"  {name}: {r.status_code} {json.dumps(payload)[:160]}")
         return
     dest.write_bytes(base64.b64decode(payload["audioContent"]))
-    print(f"  saved {dest.name}  ({dest.stat().st_size/1024:.0f} KB)")
+    print(f"  saved {dest.name}  ({dest.stat().st_size / 1024:.0f} KB)")
 
 
 def main() -> None:

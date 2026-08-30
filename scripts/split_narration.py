@@ -49,15 +49,32 @@ def names() -> list[str]:
 
 
 def duration(p: Path) -> float:
-    return float(subprocess.run([FP, "-v", "error", "-show_entries", "format=duration",
-                                 "-of", "csv=p=0", str(p)],
-                                capture_output=True, text=True, check=False).stdout.strip())
+    return float(
+        subprocess.run(
+            [FP, "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+    )
 
 
 def silences(src: Path) -> list[tuple[float, float]]:
-    r = subprocess.run([FF, "-i", str(src), "-af",
-                        f"silencedetect=noise={SILENCE_DB}dB:d={SILENCE_MIN}", "-f", "null", "-"],
-                       capture_output=True, text=True, check=False)
+    r = subprocess.run(
+        [
+            FF,
+            "-i",
+            str(src),
+            "-af",
+            f"silencedetect=noise={SILENCE_DB}dB:d={SILENCE_MIN}",
+            "-f",
+            "null",
+            "-",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
     starts = [float(x) for x in re.findall(r"silence_start: ([\d.]+)", r.stderr)]
     ends = [float(x) for x in re.findall(r"silence_end: ([\d.]+)", r.stderr)]
     return list(zip(starts, ends, strict=False))
@@ -78,15 +95,16 @@ def main() -> None:
     # Cut in the middle of each pause, so every piece keeps a little air at both ends.
     cuts = [0.0] + [(a + b) / 2 for a, b in gaps] + [total]
     # Drop a leading or trailing pause: those are the room, not a section break.
-    segs = [(cuts[i], cuts[i + 1]) for i in range(len(cuts) - 1)
-            if cuts[i + 1] - cuts[i] > 2.0]
+    segs = [(cuts[i], cuts[i + 1]) for i in range(len(cuts) - 1) if cuts[i + 1] - cuts[i] > 2.0]
 
     if len(segs) != len(want):
         print(f"Found {len(segs)} sections but the script has {len(want)}.\n")
         for i, (a, b) in enumerate(segs, 1):
             print(f"  {i:>2}. {a:7.1f} -> {b:7.1f}  ({b - a:5.1f}s)")
-        print("\nRe-record leaving a clearer pause between sections, or adjust SILENCE_DB /"
-              "\nSILENCE_MIN at the top of this script and run it again. Nothing was written.")
+        print(
+            "\nRe-record leaving a clearer pause between sections, or adjust SILENCE_DB /"
+            "\nSILENCE_MIN at the top of this script and run it again. Nothing was written."
+        )
         raise SystemExit(1)
 
     BACKUP.mkdir(parents=True, exist_ok=True)
@@ -96,18 +114,40 @@ def main() -> None:
     run_total = 0.0
     for (a, b), name in zip(segs, want, strict=True):
         dest = A / f"{name}.mp3"
-        subprocess.run([FF, "-v", "error", "-y", "-ss", f"{a:.3f}", "-to", f"{b:.3f}",
-                        "-i", str(src), "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
-                        "-ar", "48000", "-ac", "1", "-b:a", "192k", str(dest)],
-                       check=True)
+        subprocess.run(
+            [
+                FF,
+                "-v",
+                "error",
+                "-y",
+                "-ss",
+                f"{a:.3f}",
+                "-to",
+                f"{b:.3f}",
+                "-i",
+                str(src),
+                "-af",
+                "loudnorm=I=-16:TP=-1.5:LRA=11",
+                "-ar",
+                "48000",
+                "-ac",
+                "1",
+                "-b:a",
+                "192k",
+                str(dest),
+            ],
+            check=True,
+        )
         d = duration(dest)
         run_total += d
         print(f"  {name:<38} {d:5.1f}s")
 
     print(f"\n  {'TOTAL':<38} {run_total:5.1f}s = {int(run_total // 60)}:{run_total % 60:04.1f}")
     if run_total > LIMIT:
-        print(f"  OVER the 4:00 limit by {run_total - LIMIT:.0f}s. Trim the script or re-read"
-              "\n  a little quicker; the originals are in video/assets/_tts-backup.")
+        print(
+            f"  OVER the 4:00 limit by {run_total - LIMIT:.0f}s. Trim the script or re-read"
+            "\n  a little quicker; the originals are in video/assets/_tts-backup."
+        )
     else:
         print(f"  {LIMIT - run_total:.0f}s under the 4:00 limit.")
     print("\nNow rebuild:  .venv/bin/python scripts/assemble_video.py")
