@@ -23,3 +23,5 @@ docs/gallery/_raw/
 # generated video assets: large binaries, regenerate with scripts/make_video_assets.py
 video/assets/
 video/*.mp4
+video/.chrome-profile/
+video/assets/

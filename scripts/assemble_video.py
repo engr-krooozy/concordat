@@ -19,6 +19,11 @@ import subprocess
 import textwrap
 from pathlib import Path
 
+# The default brew ffmpeg bottle ships without libass or libfreetype, so it has no subtitles,
+# ass or drawtext filter at all. ffmpeg-full has both; prefer it, fall back to PATH.
+FULL = Path("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
+FF = str(FULL) if FULL.exists() else "ffmpeg"
+
 ROOT = Path(__file__).resolve().parent.parent
 A = ROOT / "video/assets"
 CLIPS = A / "clips"
@@ -35,7 +40,7 @@ SHOTS = [
     ("vo-3-intake-and-the-dead-end",   CLIPS / "s3-intake.webm",    "clip",  7),
     ("vo-4-the-negotiation",           CLIPS / "s4-negotiation.webm", "clip", 7),
     ("vo-5-clean-room-and-the-finding", CLIPS / "s5-finding.webm",  "clip",  7),
-    ("vo-6-running-on-google-cloud",   GAL / "11-projects.png",     "still", 0),
+    ("vo-6-running-on-google-cloud",   None,                        "console", 0),
     ("vo-7-the-two-claims-you-can-check", None,                     "triple", 0),
     ("vo-8-architecture",              ROOT / "docs/architecture.png", "still", 0),
     ("vo-9-close",                     CLIPS / "s9-close.webm",     "clip",  7),
@@ -43,11 +48,22 @@ SHOTS = [
 # shot 7 runs over the three proof frames in turn
 TRIPLE = [GAL / "08-sovereignty.png", GAL / "09-privacy-floor.png", GAL / "10-injection.png"]
 
+# Shot 6 walks the Cloud Console in the order the narration names the services. Recorded by
+# scripts/record_console.py; without that footage the shot falls back to the captured gcloud
+# frame so the cut still builds.
+CONSOLE = ROOT / "video/assets/console"
+CONSOLE_ORDER = ["run-services", "run-logs", "pubsub", "firestore", "bigquery",
+                 "agent-engine", "iam"]
+
 # This ffmpeg has neither libass nor libfreetype, so there is no subtitles, ass or drawtext
 # filter to burn with. Pillow draws each caption to a transparent PNG instead and overlay
 # composites it for exactly its own span, which needs no text support in ffmpeg at all.
-SUB_FONT = "/System/Library/Fonts/Helvetica.ttc"
-SUB_SIZE = 30
+# Styling lives in the .ass file rather than force_style=, because escaping a style string
+# through ffmpeg's filter parser with no shell in the way is a losing game.
+# name, font, size, primary, secondary, outline, back, b,i,u,s, scale x/y, spacing, angle,
+# border 3 = opaque box, outline, shadow, align 2 = bottom centre, margins l/r/v, encoding
+ASS_STYLE = ("Style: Default,Helvetica Neue,34,&H00FFFFFF,&H000000FF,&H00000000,&HB4000000,"
+             "0,0,0,0,100,100,0,0,3,1.7,0,2,120,120,54,1")
 
 FIT = ("scale=1920:1080:force_original_aspect_ratio=decrease,"
        "pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=white,setsar=1")
@@ -68,7 +84,7 @@ def dur(path: Path) -> float:
 def still(src: Path, seconds: float, dest: Path, zoom: float = 1.08) -> None:
     """A slow push in, so a static frame still reads as a shot rather than a slide."""
     frames = int(seconds * FPS)
-    run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-i", str(src),
+    run([FF, "-v", "error", "-y", "-loop", "1", "-i", str(src),
          "-vf", (f"{FIT},zoompan=z='min(1+({zoom}-1)*on/{frames},{zoom})'"
                  f":d={frames}:s=1920x1080:fps={FPS},format=yuv420p"),
          "-t", f"{seconds}", "-r", str(FPS), "-c:v", "libx264", "-preset", "medium",
@@ -76,7 +92,7 @@ def still(src: Path, seconds: float, dest: Path, zoom: float = 1.08) -> None:
 
 
 def clip(src: Path, start: float, seconds: float, dest: Path) -> None:
-    run(["ffmpeg", "-v", "error", "-y", "-ss", str(start), "-i", str(src), "-t", f"{seconds}",
+    run([FF, "-v", "error", "-y", "-ss", str(start), "-i", str(src), "-t", f"{seconds}",
          "-vf", f"{FIT},format=yuv420p", "-r", str(FPS),
          "-c:v", "libx264", "-preset", "medium", "-crf", "18", str(dest)])
 
@@ -119,39 +135,6 @@ def build_srt(spans: list[tuple[str, float, float]], texts: dict[str, str], dest
     dest.write_text("\n".join(lines), encoding="utf-8")
 
 
-def render_captions(spans, texts) -> list[tuple[Path, float, float]]:
-    """One transparent 1920x1080 PNG per caption, drawn where the caption belongs."""
-    from PIL import Image, ImageDraw, ImageFont
-    font = ImageFont.truetype(SUB_FONT, SUB_SIZE)
-    caps = WORK / "caps"
-    caps.mkdir(exist_ok=True)
-    out = []
-    for i, (key, start, end) in enumerate(spans):
-        body = texts.get(key, "")
-        sentences = [x.strip() for x in re.split(r"(?<=[.:])\s+", body) if x.strip()]
-        total = sum(len(x) for x in sentences) or 1
-        t = start
-        for j, sent in enumerate(sentences):
-            span = (end - start) * len(sent) / total
-            lines = textwrap.wrap(sent, 64)
-            img = Image.new("RGBA", (1920, 1080), (0, 0, 0, 0))
-            d = ImageDraw.Draw(img)
-            lh = SUB_SIZE + 12
-            block = len(lines) * lh
-            y = 1080 - 64 - block
-            for ln in lines:
-                w = d.textbbox((0, 0), ln, font=font)[2]
-                x = (1920 - w) / 2
-                d.rectangle([x - 18, y - 8, x + w + 18, y + lh - 4], fill=(13, 13, 13, 205))
-                d.text((x, y), ln, font=font, fill=(255, 255, 255, 255))
-                y += lh
-            png = caps / f"cap-{i:02d}-{j:02d}.png"
-            img.save(png)
-            out.append((png, t, min(t + span, end)))
-            t += span
-    return out
-
-
 def main() -> None:
     shutil.rmtree(WORK, ignore_errors=True)
     WORK.mkdir(parents=True, exist_ok=True)
@@ -167,6 +150,22 @@ def main() -> None:
             still(src, d, dest)
         elif kind == "clip":
             clip(src, start, d, dest)
+        elif kind == "console":
+            have = [CONSOLE / f"{n}.webm" for n in CONSOLE_ORDER
+                    if (CONSOLE / f"{n}.webm").exists()]
+            if not have:
+                print("    no console footage yet -> using the gcloud frame instead")
+                still(GAL / "11-projects.png", d, dest)
+            else:
+                parts = []
+                for i, src2 in enumerate(have):
+                    q = WORK / f"{key}-{i}.mp4"
+                    clip(src2, 2.0, d / len(have), q)   # skip the Console settling in
+                    parts.append(q)
+                lst2 = WORK / f"{key}.txt"
+                lst2.write_text("".join(f"file '{q}'\n" for q in parts))
+                run([FF, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst2),
+                     "-c", "copy", str(dest)])
         else:                                    # three proof frames sharing one line
             parts = []
             for i, img in enumerate(TRIPLE):
@@ -175,7 +174,7 @@ def main() -> None:
                 parts.append(p)
             lst = WORK / f"{key}.txt"
             lst.write_text("".join(f"file '{p}'\n" for p in parts))
-            run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
+            run([FF, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
                  "-c", "copy", str(dest)])
         segs.append(dest); spans.append((key, t, t + d)); t += d
         print(f"  {key:<36} {d:5.1f}s  -> {t:6.1f}s")
@@ -184,19 +183,19 @@ def main() -> None:
     lst = WORK / "all.txt"
     lst.write_text("".join(f"file '{p}'\n" for p in segs))
     silent = WORK / "picture.mp4"
-    run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
+    run([FF, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(lst),
          "-c", "copy", str(silent)])
 
     # voice
     vlst = WORK / "vo.txt"
     vlst.write_text("".join(f"file '{A / (k + '.mp3')}'\n" for k, _, _ in spans))
     voice = WORK / "voice.wav"
-    run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(vlst),
+    run([FF, "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(vlst),
          "-ar", "48000", "-ac", "2", str(voice)])
 
     # score: tension under the problem, resolve under the payoff, both well under the voice
     score = WORK / "score.wav"
-    run(["ffmpeg", "-v", "error", "-y",
+    run([FF, "-v", "error", "-y",
          "-stream_loop", "-1", "-i", str(A / "score-tension.wav"),
          "-stream_loop", "-1", "-i", str(A / "score-resolve.wav"),
          "-filter_complex",
@@ -206,7 +205,7 @@ def main() -> None:
          "-map", "[s]", "-ar", "48000", "-ac", "2", "-t", f"{t}", str(score)])
 
     mixed = WORK / "mix.wav"
-    run(["ffmpeg", "-v", "error", "-y", "-i", str(voice), "-i", str(score),
+    run([FF, "-v", "error", "-y", "-i", str(voice), "-i", str(score),
          "-filter_complex", ("[0:a]loudnorm=I=-16:TP=-1.5:LRA=11[v];[v][1:a]amix=inputs=2:"
                              "duration=first:dropout_transition=0,alimiter=limit=0.95[m]"),
          "-map", "[m]", str(mixed)])
@@ -215,29 +214,23 @@ def main() -> None:
     build_srt(spans, texts, srt)
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    cues = render_captions(spans, texts)
-    print(f"  {len(cues)} captions rendered")
+    ass = WORK / "subs.ass"
+    run([FF, "-v", "error", "-y", "-i", str(srt), str(ass)])
+    # ffmpeg writes the .ass with a 384x288 canvas, so every size in it gets scaled by 3.75
+    # on a 1080p frame. Pin the canvas to the real frame first, then the style is literal.
+    a_txt = ass.read_text()
+    a_txt = re.sub(r"^PlayResX:.*$", "PlayResX: 1920", a_txt, flags=re.MULTILINE)
+    a_txt = re.sub(r"^PlayResY:.*$", "PlayResY: 1080", a_txt, flags=re.MULTILINE)
+    if "PlayResX" not in a_txt:
+        a_txt = a_txt.replace("[Script Info]", "[Script Info]\nPlayResX: 1920\nPlayResY: 1080")
+    ass.write_text(re.sub(r"^Style: Default,.*$", ASS_STYLE, a_txt, flags=re.MULTILINE))
 
-    # A still PNG input is one frame at t=0, so 49 separate overlay inputs draw nothing after
-    # the first frame. Concat them into a single alpha track instead, each held for its own
-    # span, and composite that once. qtrle because it keeps the alpha channel.
-    track_list = WORK / "caps.txt"
-    lines = []
-    for png, a, b in cues:
-        lines.append(f"file '{png}'\nduration {b - a:.3f}\n")
-    lines.append(f"file '{cues[-1][0]}'\n")     # concat needs the last entry repeated
-    track_list.write_text("".join(lines))
-    captrack = WORK / "captions.mov"
-    run(["ffmpeg", "-v", "error", "-y", "-f", "concat", "-safe", "0", "-i", str(track_list),
-         "-vf", f"fps={FPS},format=rgba", "-c:v", "qtrle", "-t", f"{t}", str(captrack)])
-
-    run(["ffmpeg", "-v", "error", "-y", "-i", str(silent), "-i", str(captrack), "-i", str(mixed),
-         "-filter_complex", "[0:v][1:v]overlay=0:0:format=auto:shortest=0[v]",
-         "-map", "[v]", "-map", "2:a",
+    run([FF, "-v", "error", "-y", "-i", str(silent), "-i", str(mixed),
+         "-vf", f"ass={ass}", "-map", "0:v", "-map", "1:a",
          "-c:v", "libx264", "-preset", "slow", "-crf", "19", "-pix_fmt", "yuv420p",
          "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", str(OUT)])
     print(f"\n{OUT}  {dur(OUT):.1f}s  {OUT.stat().st_size/1e6:.1f} MB")
-    print(f"{srt}  (sidecar subtitles, also burned in)")
+    print(f"{srt}  (sidecar subtitles; also burned in via libass)")
 
 
 if __name__ == "__main__":

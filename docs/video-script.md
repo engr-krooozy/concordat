@@ -28,7 +28,7 @@ narration in your own voice if there is time. It is better, and judges notice.
 | 3 | 0:34–1:04 | Screen: case detail, steps 1–2 | Voice note in, solo trace dies at the perimeter |
 | 4 | 1:04–1:48 | Screen: negotiation panel | Both peers counter, Alpha concedes, all three sign |
 | 5 | 1:48–2:18 | Screen: finding + approval | 30 accounts, ₦2,316,720, human clicks approve |
-| 6 | 2:18–2:40 | **Cloud Console** | Cloud Run services, then live logs for `bank-alpha` |
+| 6 | see cue sheet | **Cloud Console** | Cloud Run, its logs, Pub/Sub, Firestore, BigQuery, Agent Engine, IAM |
 | 7 | 2:40–3:16 | Terminal | `verify_sovereignty.py`, BigQuery refusal, injection demo |
 | 8 | 3:16–3:40 | `docs/architecture.png` | Four projects, ADK, A2A, Agent Engine, Model Armor |
 | 9 | 3:40–3:52 | Dashboard + URL card | Close |
@@ -47,7 +47,7 @@ and the cold open. Lay the voice tracks end to end at these marks and cut pictur
 | 3 | 0:35.8 | 0:53.2 | `vo-3-intake-and-the-dead-end.mp3` |
 | 4 | 0:53.2 | 1:21.8 | `vo-4-the-negotiation.mp3` |
 | 5 | 1:21.8 | 1:54.5 | `vo-5-clean-room-and-the-finding.mp3` |
-| 6 | 1:54.5 | 2:12.5 | `vo-6-running-on-google-cloud.mp3` |
+| 6 | 1:54.5 | see rebuild | `vo-6-running-on-google-cloud.mp3` |
 | 7 | 2:12.5 | 2:54.1 | `vo-7-the-two-claims-you-can-check.mp3` |
 | 8 | 2:54.1 | 3:23.0 | `vo-8-architecture.mp3` |
 | 9 | 3:23.0 | 3:42.3 | `vo-9-close.mp3` |
@@ -58,8 +58,8 @@ and the cold open. Lay the voice tracks end to end at these marks and cut pictur
 
 ### 1. Cold open (0:00–0:14) — over Veo footage
 > A customer loses two point four million naira to a transfer she never made. Her bank can
-> follow that money for about thirty seconds. Then the trail leaves the building, into two banks
-> forbidden by law from comparing notes. So nobody ever sees the whole picture.
+> follow it for about thirty seconds. Then the trail leaves the building, into two banks
+> forbidden by law from comparing notes. So nobody sees the whole picture.
 
 ### 2. Value proposition (0:14–0:34) — dashboard, URL bar visible
 > Concordat gives each bank its own fleet of AI agents. When a trace dies at the boundary, the
@@ -72,50 +72,57 @@ and the cold open. Lay the voice tracks end to end at these marks and cut pictur
 > trail leaves for a bank it cannot see into.
 
 ### 4. The negotiation (1:04–1:48) — the distinctive part, give it room
-> Now the interesting part. Alpha proposes terms over the A2A protocol: a privacy floor of ten
-> accounts. Meridian refuses and counters, twenty-five. Union wants fifteen. Alpha concedes to
-> the strictest terms on the table, and all three countersign.
+> Now the interesting part. Alpha proposes terms over A2A: a privacy floor of ten accounts.
+> Meridian refuses and counters, twenty-five. Union wants fifteen. Alpha concedes to the
+> strictest terms on the table, and all three countersign.
 >
-> Every one of those verdicts came from deterministic policy code, not from a language model. No
+> Every one of those verdicts came from deterministic policy code, not a language model. No
 > phrasing of a request can talk a policy round.
 
 ### 5. Clean room and the finding (1:48–2:18)
-> The agreement then compiles itself into a temporary BigQuery clean room, where every
-> contribution carries a privacy policy at the agreed threshold. The joint query finds what none
-> of them could see alone. Thirty mule accounts across all three banks, two point three million
-> naira converging on one cash-out point.
+> The agreement compiles itself into a temporary BigQuery clean room, where every contribution
+> carries a privacy policy at the agreed threshold. The joint query finds what none of them
+> could see alone. Thirty mule accounts across all three banks, two point three million naira
+> converging on one cash-out point.
 >
 > Nothing is enforced until a human approves. Alpha then freezes thirty of its own accounts and
-> files with the regulator, and never learns the name of a single Meridian customer.
+> files with the regulator, never learning the name of a single Meridian customer.
 
 ### 6. Running on Google Cloud (2:18–2:40) — Console, then logs
-> This is the backend. Four Google Cloud projects: one for each bank, plus neutral ground that
-> holds no bank's ledger and runs no bank's code. Cloud Run, Pub/Sub, Firestore, BigQuery, and
-> these are the live logs from the run you just watched.
+> This is the backend, in the console. Four Google Cloud projects: one per bank, plus neutral
+> ground that holds no bank's ledger and runs no bank's code.
+>
+> Cloud Run serves each fleet under its own identity, and these are the live logs from the run
+> you just watched. Pub/Sub carries every state transition, which is why a case survives a
+> service dying halfway through. Firestore holds that state. BigQuery holds three isolated
+> ledgers and builds the clean room between them. Vertex AI Agent Engine is the catalog the
+> fleets find each other through.
+>
+> And one service account per bank. That separation is where the access denied comes from.
 
 ### 7. The two claims you can check (2:40–3:16) — terminal
 > Two claims here do not rest on trusting me, because Google answers both.
 >
-> Sovereignty is a four oh three. Running as Alpha's own identity, its own ledger returns three
-> point seven million rows. A peer's ledger returns access denied.
+> Sovereignty is a four oh three. As Alpha's own identity, its own ledger returns three point
+> seven million rows. A peer's ledger returns access denied.
 >
-> And the privacy floor is not mine to lift. Ask the clean room for a single row, and BigQuery
-> refuses. A bug in my code cannot override that.
+> The privacy floor is not mine to lift either. Ask the clean room for a single row, and
+> BigQuery refuses.
 >
 > Rival banks are the threat model, so peer text is screened for injection. Of three attacks,
-> the classifier catches two. The third reads like a memo and gets through, then fails at the
-> policy engine, which reads the number and ignores the prose.
+> two are caught. The third reads like a memo and gets through, then fails at the policy
+> engine, which reads the number and ignores the prose.
 
 ### 8. Architecture (3:16–3:40)
-> Gemini 3.5 Flash reasons inside every agent on the Google ADK. Fleets find each other through
-> Vertex AI Agent Engine, then talk directly over A2A. Each bank keeps memory in its own Agent
-> Engine Memory Bank, and Model Armor guards both edges. Gemma 3 runs locally in every
-> container, because asking a hosted model whether text is safe to send requires sending it.
+> Gemini 3.5 Flash reasons inside every agent on the Google ADK, and fleets talk over A2A.
+> Each bank keeps memory in its own Memory Bank, and Model Armor guards both edges. Gemma 3
+> runs locally in every container, because asking a hosted model whether text is safe to send
+> requires sending it.
 
 ### 9. Close (3:40–3:52)
-> A2A exists. Clean rooms exist. What did not is the layer between: agents from rival
-> institutions negotiating a collaboration, compiling it into infrastructure, then dissolving
-> it. That is Concordat. The dashboard is public.
+> A2A exists. Clean rooms exist. What did not is the layer between: agents from rival banks
+> negotiating a collaboration, compiling it into infrastructure, then dissolving it. That is
+> Concordat, and the dashboard is public.
 
 ---
 

@@ -163,7 +163,7 @@ def narrate(name: str, text: str) -> None:
         json={"input": {"text": text},
               "voice": {"languageCode": "en-GB", "name": "Charon",
                         "model_name": "gemini-2.5-flash-tts"},
-              "audioConfig": {"audioEncoding": "MP3", "speakingRate": 1.08}})
+              "audioConfig": {"audioEncoding": "MP3", "speakingRate": 1.13}})
     payload = r.json()
     if "audioContent" not in payload:
         print(f"  {name}: {r.status_code} {json.dumps(payload)[:160]}")
