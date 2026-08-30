@@ -1,0 +1,107 @@
+CONCORDAT — NARRATION READ SHEET
+
+Read straight through. PAUSE ~2 FULL SECONDS between numbered sections and stay silent
+in the gap; that pause is what the splitter cuts on. A breath mid-sentence is fine.
+
+Aim for under 3 minutes 50. If you run long, read a touch quicker rather than cutting words.
+
+==============================================================================
+
+[1]  COLD OPEN     (44 words)
+
+   A customer loses two point four million naira to a transfer she never made.
+   Her bank can follow it for about thirty seconds.
+   Then the trail leaves the building, into two banks forbidden by law from comparing notes.
+   So nobody sees the whole picture.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+[2]  VALUE PROPOSITION     (37 words)
+
+   Concordat gives each bank its own fleet of AI agents.
+   When a trace dies at the boundary, the fleet does not stop.
+   It opens negotiations with the other banks.
+   This is the live system on Cloud Run.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+[3]  INTAKE AND THE DEAD END     (42 words)
+
+   
+   Nobody reports fraud by filling in a form, so the case starts as a voice note.
+   Gemini transcribes it and opens a case.
+   Alpha traces the money alone, and hits the perimeter.
+   Every trail leaves for a bank it cannot see into.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+[4]  THE NEGOTIATION     (60 words)
+
+   Now the interesting part. Alpha proposes terms over A2A:
+   a privacy floor of ten accounts. Meridian refuses and counters, twenty-five.
+   Union wants fifteen.
+   Alpha concedes to the strictest terms on the table, and all three countersign.
+   Every one of those verdicts came from deterministic policy code, not a language model.
+   No phrasing of a request can talk a policy round.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+[5]  CLEAN ROOM AND THE FINDING     (78 words)
+
+   
+   The agreement compiles itself into a temporary BigQuery clean room, where every contribution carries a privacy policy at the agreed threshold.
+   The joint query finds what none of them could see alone.
+   Thirty mule accounts across all three banks, two point three million naira converging on one cash-out point.
+   Nothing is enforced until a human approves.
+   Alpha then freezes thirty of its own accounts and files with the regulator, never learning the name of a single Meridian customer.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+[6]  RUNNING ON GOOGLE CLOUD     (108 words)
+
+   This is the backend, in the console. Four Google Cloud projects:
+   one per bank, plus neutral ground that holds no bank's ledger and runs no bank's code.
+   Cloud Run serves each fleet under its own identity, and these are the live logs from the run you just watched.
+   Pub/Sub carries every state transition, which is why a case survives a service dying halfway through.
+   Firestore holds that state.
+   BigQuery holds three isolated ledgers and builds the clean room between them.
+   Vertex AI Agent Engine is the catalog the fleets find each other through.
+   And one service account per bank.
+   That separation is where the access denied comes from.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+[7]  THE TWO CLAIMS YOU CAN CHECK     (100 words)
+
+   Two claims here do not rest on trusting me, because Google answers both.
+   Sovereignty is a four oh three.
+   As Alpha's own identity, its own ledger returns three point seven million rows.
+   A peer's ledger returns access denied.
+   The privacy floor is not mine to lift either.
+   Ask the clean room for a single row, and BigQuery refuses.
+   Rival banks are the threat model, so peer text is screened for injection.
+   Of three attacks, two are caught.
+   The third reads like a memo and gets through, then fails at the policy engine, which reads the number and ignores the prose.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+[8]  ARCHITECTURE     (52 words)
+
+   
+   Gemini 3.5 Flash reasons inside every agent on the Google ADK, and fleets talk over A2A.
+   Each bank keeps memory in its own Memory Bank, and Model Armor guards both edges.
+   Gemma 3 runs locally in every container, because asking a hosted model whether text is safe to send requires sending it.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+[9]  CLOSE     (34 words)
+
+   A2A exists. Clean rooms exist. What did not is the layer between:
+   agents from rival banks negotiating a collaboration, compiling it into infrastructure, then dissolving it.
+   That is Concordat, and the dashboard is public.
+
+   ----------------------------------------  [ pause 2 seconds ]
+
+==============================================================================
+
+Total: 555 words. At a steady documentary pace that is roughly 213 seconds.
