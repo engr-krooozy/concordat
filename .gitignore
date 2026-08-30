@@ -16,17 +16,27 @@ data/generator/output/
 models/
 *.gguf
 docs/ui/
-# submission images: regenerable, and 4MB of PNG has no business in the repo
-docs/gallery/*.png
-docs/gallery/_raw/
 
-# generated video assets: large binaries, regenerate with scripts/make_video_assets.py
-video/assets/
-video/*.mp4
-video/.chrome-profile/
-video/assets/
+# local design & planning specs
+PLAN.md
+SPEC.md
+SUBMISSION.md
+ARCHITECTURE.md
+
+# docs gallery and raw media
+docs/gallery/
+
+# video production and recording scripts / assets
+video/
+scripts/assemble_video.py
+scripts/split_narration.py
+scripts/make_video_assets.py
+scripts/record_console.py
+scripts/record_ui.py
+scripts/make_voice_note.py
+docs/video-script.md
+docs/narration-read-sheet.txt
 
 # assistant / local dev artifacts
 .claude/
 CLAUDE.md
-
