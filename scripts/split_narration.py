@@ -26,12 +26,16 @@ A = ROOT / "video/assets"
 BACKUP = A / "_tts-backup"
 FULL = Path("/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg")
 FF = str(FULL) if FULL.exists() else "ffmpeg"
-FP = FF.replace("ffmpeg", "ffprobe")
+# rsplit, not replace: the directory is called ffmpeg-full too, and replacing every
+# occurrence points at a bin/ffprobe inside a non-existent ffprobe-full.
+FP = "ffprobe".join(FF.rsplit("ffmpeg", 1))
 
-# A pause has to be this quiet for this long to count as a section break. Loose enough to
-# survive room tone, tight enough not to trip on a breath mid-sentence.
-SILENCE_DB = -34
-SILENCE_MIN = 1.1
+# A pause has to be this quiet for this long to count as a section break. Tuned against the
+# first real take: a phone recording in a normal room has a noise floor around -19 dB mean, so
+# -34 dB never triggers and nothing splits. Verify a change by checking that section lengths
+# still track the word counts in the script, not just that the count comes out at nine.
+SILENCE_DB = -25
+SILENCE_MIN = 0.9
 LIMIT = 240.0
 
 
