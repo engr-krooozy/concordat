@@ -41,8 +41,9 @@
   <text x="278" y="292" fill="#c9b27a" font-size="10">in: peer prose → injection screen</text>
 
   <rect x="72" y="312" width="400" height="52" rx="8" fill="#1a2133" stroke="#2b3350"/>
-  <text x="84" y="332" fill="#e8ecf5" font-size="13">Enforcer + Reporter</text>
-  <text x="84" y="350" fill="#8b96ad" font-size="11">acts only on Alpha's own accounts, after human approval</text>
+  <text x="84" y="330" fill="#e8ecf5" font-size="13">Enforcer + Reporter</text>
+  <text x="84" y="346" fill="#8b96ad" font-size="10.5">acts only on Alpha's own accounts, after human approval</text>
+  <text x="84" y="359" fill="#8b96ad" font-size="10.5">idempotent under redelivery · refuses to act on expired terms</text>
 
   <rect x="72" y="378" width="400" height="52" rx="8" fill="#101a2a" stroke="#3d5480"/>
   <text x="84" y="398" fill="#9dc0ff" font-size="13">BigQuery · bank_alpha</text>
@@ -98,7 +99,7 @@
   <text x="72" y="594" fill="#f6c453" font-size="12">Union  ←  counter: k=15, TTL 72h</text>
   <text x="72" y="618" fill="#8b96ad" font-size="12">Alpha  →  concedes to strictest: k=25, TTL 48h</text>
   <text x="72" y="642" fill="#3ecf8e" font-size="12">Meridian, Union  ←  accept · all three countersign</text>
-  <text x="72" y="676" fill="#8b96ad" font-size="11">Gemini drafts the wording. The policy engine decides.</text>
+  <text x="72" y="676" fill="#8b96ad" font-size="11">A deterministic policy engine returns every verdict.</text>
   <text x="72" y="696" fill="#8b96ad" font-size="11">No phrasing of a request can talk a policy round.</text>
 
   <!-- ============ CLEAN ROOM ============ -->
@@ -125,13 +126,14 @@
   <text x="72" y="850" fill="#8b96ad" font-size="12">Any service can die mid-case; the next event resumes it from Firestore.</text>
 
   <!-- ============ OUTCOME ============ -->
-  <rect x="52" y="878" width="1000" height="82" rx="12" fill="#241f10" stroke="#ffd479" stroke-width="2"/>
+  <rect x="52" y="874" width="1000" height="94" rx="12" fill="#241f10" stroke="#ffd479" stroke-width="2"/>
   <text x="72" y="906" fill="#ffd479" font-size="15" font-weight="bold">The finding no single bank could reach</text>
   <text x="72" y="930" fill="#e8ecf5" font-size="13">30 mule accounts across Alpha → Meridian → Union · NGN 2,316,720 concentrated at one cash-out cluster</text>
   <text x="72" y="950" fill="#8b96ad" font-size="11.5">Revealed only because the ring is larger than the privacy floor the banks agreed to. Smaller groups stay hidden.</text>
 
-  <rect x="1076" y="878" width="472" height="82" rx="12" fill="#111726" stroke="#3ecf8e" stroke-width="2"/>
+  <rect x="1076" y="874" width="472" height="94" rx="12" fill="#111726" stroke="#3ecf8e" stroke-width="2"/>
   <text x="1096" y="906" fill="#3ecf8e" font-size="15" font-weight="bold">Then, and only then, a human</text>
   <text x="1096" y="930" fill="#e8ecf5" font-size="13">Analyst approves · Alpha freezes 30 of its own accounts</text>
-  <text x="1096" y="950" fill="#8b96ad" font-size="11.5">No agent acts across a boundary. No peer's customer is ever named.</text>
+  <text x="1096" y="947" fill="#8b96ad" font-size="11">No agent acts across a boundary. No peer's customer is ever named.</text>
+  <text x="1096" y="962" fill="#8b96ad" font-size="11">Approve after the concordat's TTL lapses and the gate refuses you.</text>
 </svg>
