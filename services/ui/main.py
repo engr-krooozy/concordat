@@ -162,6 +162,18 @@ def index() -> FileResponse:
     return FileResponse(STATIC / "index.html")
 
 
+@app.get("/judge_replay.sh")
+def judge_replay() -> FileResponse:
+    """The judge-mode script, served from the public dashboard.
+
+    The README promises a walkthrough with no clone and no credentials, and that promise was
+    only two thirds true: the script needs neither, but you had to clone the repo to get it.
+    Serving it here closes the gap. It is plain text on purpose, so anyone can read the thing
+    before running it.
+    """
+    return FileResponse(STATIC / "judge_replay.sh", media_type="text/plain")
+
+
 @app.get("/guide")
 def guide() -> FileResponse:
     """What the dashboard assumes you already know, for people who do not.

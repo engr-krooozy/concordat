@@ -17,13 +17,18 @@ Fleet* track. Built solo, Aug 2026.
 The dashboard is public and needs no account:
 **https://mission-control-fa7ntw3nkq-uc.a.run.app**
 
-To walk a real investigation end to end from a terminal — no clone, no credentials, no GCP
-project, just `curl` and `python3`:
+To walk a real investigation end to end from a terminal, fetch the one script the dashboard
+serves. No clone, no credentials and no GCP project: it talks to the public deployment over
+`curl`, and needs nothing but `python3` locally.
 
 ```bash
-bash scripts/judge_replay.sh              # the newest completed case, beat by beat
-APPROVE=1 bash scripts/judge_replay.sh    # and exercise the human approval gate yourself
+curl -sO https://mission-control-fa7ntw3nkq-uc.a.run.app/judge_replay.sh
+bash judge_replay.sh              # the newest completed case, beat by beat
+APPROVE=1 bash judge_replay.sh    # and exercise the human approval gate yourself
 ```
+
+It is served as plain text so you can read it before you run it, and it is the same file as
+`scripts/judge_replay.sh` if you would rather clone.
 
 It prints the solo trace hitting the perimeter, the negotiation with both peers pushing
 back, the joint finding no bank could reach alone, and every outbound payload the perimeter

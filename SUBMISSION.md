@@ -41,8 +41,9 @@ purpose is to prove a *human* decided, and that property is unchanged. All data 
 - [x] Text description — `docs/devpost-description.md`, current as of 29 Aug (paste into Devpost)
 - [ ] **Code repository — grant judge access.** Private GitHub is allowed; without this the
       submission cannot be judged at all, so do it first
-- [x] README.md with reproducible setup, a judge quickstart, and `scripts/judge_replay.sh`
-      (needs no clone, no credentials, no GCP project — they said they run your code)
+- [x] README.md with reproducible setup, a judge quickstart, and `judge_replay.sh`, which the
+      dashboard serves at `/judge_replay.sh` so the quickstart genuinely needs no clone, no
+      credentials and no GCP project (they said they run your code)
 - [x] **Architecture diagram** — `docs/architecture.png` (3000x1875, hand-built; source
       `docs/architecture.svg`). Redrawn 29 Aug for the four managed components
 - [ ] Demo video ≤ **4:00**, shows problem, value prop, live demo, **backend running on Google
@@ -124,7 +125,8 @@ Record scenes separately; UI runs from deterministic `make demo`. Subtitles burn
   judge opens the URL.
 - `scripts/judge_replay.sh` is judge mode, and it is done: it walks a real case beat by beat
   against the live deployment with nothing but `curl` and `python3`. `APPROVE=1` exercises the
-  human gate.
+  human gate. It is also served from the public dashboard at `/judge_replay.sh`, because the
+  README promised "no clone" while requiring one to obtain the file.
 - **Local scripts need ADC on the gmail account.** Anything that impersonates a bank service
   account fails with an IAM error naming `iam.serviceAccounts.getAccessToken` if ADC is a work
   account. `gcloud auth application-default login`, then
