@@ -15,11 +15,14 @@ from playwright.sync_api import sync_playwright
 
 UI = "https://mission-control-fa7ntw3nkq-uc.a.run.app"
 OUT = Path(__file__).resolve().parent.parent / "video/assets/clips"
-# Render at 2x and record 4K. The page is laid out at 1920x1080 either way; the extra pixels
-# are resolution, not more content. Downscaled to the cut it makes small UI text genuinely
-# sharp, which matters when half the frames are dense text.
-W, H = 1920, 1080
-SCALE = 2
+# Record 4K of a page that still lays out at 1920x1080.
+#
+# device_scale_factor does NOT do this: Playwright renders the viewport at CSS size and paints
+# it into the top-left of whatever record_video_size asks for, leaving the rest grey. Zoom is
+# the lever that works. A 3840x2160 viewport zoomed 2x has a layout viewport of exactly
+# 1920x1080, so composition and every scroll target are unchanged, at four times the pixels.
+W, H = 3840, 2160
+ZOOM = 2.0
 
 # (name, seconds, what the camera does). Seconds are the cue-sheet durations, plus a little
 # handle at each end so the edit has something to trim into.
@@ -77,12 +80,11 @@ def main() -> None:
             if only and only != name:
                 continue
             ctx = browser.new_context(viewport={"width": W, "height": H},
-                                      device_scale_factor=SCALE,
                                       record_video_dir=str(OUT),
-                                      record_video_size={"width": W * SCALE,
-                                                         "height": H * SCALE})
+                                      record_video_size={"width": W, "height": H})
             page = ctx.new_page()
             page.goto(UI, wait_until="load")
+            page.evaluate(f"document.documentElement.style.zoom = '{ZOOM}'")
             page.wait_for_timeout(6000)          # the fleet panels fill in after first paint
             move(page, kind, secs)
             ctx.close()                           # flushes the webm
