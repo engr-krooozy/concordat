@@ -110,7 +110,7 @@ flowchart TB
 6. **Auditability**: Every negotiation round, policy verdict, clean-room query, and enforcement action is an append-only Firestore audit entry with actor + timestamp + payload hash.
 7. **Memory is sovereign too**: Each fleet's cross-case memory lives in that bank's own Memory Bank in its own project. Only k-thresholded aggregates go in — the shape of a network, never an individual person.
 
-<img width="1435" height="497" alt="Screenshot 2026-08-30 at 20 47 28" src="https://github.com/user-attachments/assets/d9059a69-c867-4972-9d24-c1be03241670" />
+<img width="1435" height="417" alt="Screenshot 2026-08-31 at 10 17 13" src="https://github.com/user-attachments/assets/12cc1a5d-f7a2-4765-bf44-74e394f0a777" />
 
 ---
 
